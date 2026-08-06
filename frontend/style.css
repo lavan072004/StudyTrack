@@ -311,7 +311,7 @@ body {
 }
 
 /* Forms & Inputs */
-.student-form {
+.student-form, .course-form {
     display: flex;
     flex-direction: column;
     gap: 18px;
@@ -319,7 +319,7 @@ body {
 
 .form-row {
     display: grid;
-    grid-template-columns: 1fr 1fr 120px;
+    grid-template-columns: 1fr 1fr 1fr;
     gap: 16px;
 }
 
@@ -338,6 +338,7 @@ body {
 input[type="text"],
 input[type="email"],
 input[type="number"],
+select,
 textarea {
     background: rgba(15, 23, 42, 0.6);
     border: 1px solid var(--border-color);
@@ -350,9 +351,15 @@ textarea {
     transition: var(--transition);
 }
 
+select option {
+    background: #0f172a;
+    color: #fff;
+}
+
 input[type="text"]:focus,
 input[type="email"]:focus,
 input[type="number"]:focus,
+select:focus,
 textarea:focus {
     border-color: var(--primary);
     box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
@@ -468,10 +475,11 @@ textarea:focus {
     gap: 12px;
 }
 
-/* Student Cards Grid */
+/* Cards Grid */
 .cards-grid-header {
     display: flex;
     align-items: center;
+    justify-content: space-between;
     gap: 12px;
     margin-bottom: 16px;
 }
@@ -487,8 +495,8 @@ textarea:focus {
     gap: 20px;
 }
 
-/* Student Card */
-.student-card {
+/* Student & Course Cards */
+.student-card, .course-card {
     background: var(--bg-card);
     border: 1px solid var(--border-color);
     border-radius: var(--radius-lg);
@@ -511,7 +519,17 @@ textarea:focus {
     background: linear-gradient(to bottom, var(--primary), var(--secondary));
 }
 
-.student-card:hover {
+.course-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 4px;
+    height: 100%;
+    background: linear-gradient(to bottom, var(--accent-purple), var(--accent-pink));
+}
+
+.student-card:hover, .course-card:hover {
     transform: translateY(-3px);
     border-color: var(--border-glow);
     box-shadow: 0 12px 28px rgba(0, 0, 0, 0.3);
@@ -538,22 +556,32 @@ textarea:focus {
     color: var(--secondary);
 }
 
+.course-code-badge {
+    background: linear-gradient(135deg, rgba(168, 85, 247, 0.2), rgba(236, 72, 153, 0.2));
+    border: 1px solid rgba(168, 85, 247, 0.4);
+    color: #e9d5ff;
+    padding: 6px 12px;
+    border-radius: var(--radius-md);
+    font-family: var(--font-heading);
+    font-weight: 700;
+    font-size: 0.95rem;
+}
+
 .card-info {
     display: flex;
     flex-direction: column;
     gap: 4px;
 }
 
-.student-name-text {
+.student-name-text, .course-title-text {
     font-family: var(--font-heading);
     font-size: 1.15rem;
     font-weight: 600;
 }
 
-.student-email-text {
+.student-email-text, .course-desc-text {
     color: var(--text-muted);
     font-size: 0.85rem;
-    word-break: break-all;
 }
 
 .age-editor-row {
@@ -620,7 +648,6 @@ textarea:focus {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 16px;
-
 }
 
 .complexity-box {
@@ -650,7 +677,7 @@ textarea:focus {
     color: var(--text-muted);
 }
 
-/* AI Summarizer */
+/* AI Summarizer & Assistant */
 .summarizer-input-container {
     display: flex;
     flex-direction: column;
@@ -709,7 +736,6 @@ textarea:focus {
 .key-points-box ul {
     padding-left: 20px;
     color: var(--text-main);
-
 }
 
 .key-points-box li {
@@ -737,7 +763,7 @@ textarea:focus {
     overflow-x: auto;
 }
 
-/* Semantic Search */
+/* Semantic Search & Assistant Chips */
 .search-input-group {
     display: flex;
     gap: 12px;

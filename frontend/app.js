@@ -8,6 +8,7 @@ const API_BASE = window.location.origin;
 // Application State
 const state = {
     students: [],
+    courses: [],
     currentTab: 'dashboard',
     notes: []
 };
@@ -16,13 +17,16 @@ const state = {
 document.addEventListener('DOMContentLoaded', () => {
     initNavigation();
     initStudentForm();
+    initCourseForm();
     initControls();
     initAlgorithmsTab();
+    initAIHelperTab();
     initAISummarizerTab();
     initSemanticSearchTab();
     
     // Initial Load
     fetchStudents();
+    fetchCourses();
     fetchNotesDataset();
 });
 
@@ -63,8 +67,10 @@ function initNavigation() {
     const pageSubtitle = document.getElementById('page-subtitle');
 
     const meta = {
-        'dashboard': { title: 'Student Dashboard', subtitle: 'Manage student profiles, edit ages, and view records' },
+        'dashboard': { title: 'Student Management', subtitle: 'Manage student profiles, edit ages, and view records' },
+        'courses': { title: 'Course Offerings', subtitle: 'Register, assign, and manage academic courses' },
         'algorithms': { title: 'Algorithms & Report', subtitle: 'Custom Insertion Sort, Binary Search, and API Report endpoint' },
+        'ai-helper': { title: 'AI Study Assistant', subtitle: 'Interactive companion for revision tips, algorithm insights & course guidance' },
         'ai-summarizer': { title: 'AI Text Summarizer', subtitle: 'Extract topics, key points, and difficulty metrics into structured JSON' },
         'semantic-search': { title: 'Semantic Search Engine', subtitle: 'Cosine Similarity vector search across computer science note dataset' }
     };
@@ -106,29 +112,47 @@ async function fetchStudents() {
         
         state.students = await response.json();
         renderStudentsGrid(state.students);
-        updateHeaderStats(state.students);
-        document.getElementById('active-filter-badge').style.display = 'none';
-        document.getElementById('btn-reset-search').style.display = 'none';
+        updateHeaderStats();
+        populateStudentDropdown(state.students);
+
+        const filterBadge = document.getElementById('active-filter-badge');
+        const resetBtn = document.getElementById('btn-reset-search');
+        if (filterBadge) filterBadge.style.display = 'none';
+        if (resetBtn) resetBtn.style.display = 'none';
     } catch (err) {
         grid.innerHTML = `<div class="loading-state"><p style="color: var(--danger)">Error: ${escapeHtml(err.message)}</p></div>`;
         showToast(err.message, 'error');
     }
 }
 
-function updateHeaderStats(studentsList) {
-    const totalEl = document.getElementById('stat-total-students');
+function populateStudentDropdown(studentsList) {
+    const select = document.getElementById('course-student-id');
+    if (!select) return;
+    select.innerHTML = '<option value="">-- Optional: Select Student --</option>';
+    studentsList.forEach(student => {
+        const opt = document.createElement('option');
+        opt.value = student.id;
+        opt.textContent = `${student.name} (ID #${student.id})`;
+        select.appendChild(opt);
+    });
+}
+
+function updateHeaderStats() {
+    const totalStudentsEl = document.getElementById('stat-total-students');
+    const totalCoursesEl = document.getElementById('stat-total-courses');
     const avgAgeEl = document.getElementById('stat-avg-age');
 
-    totalEl.textContent = studentsList.length;
+    if (totalStudentsEl) totalStudentsEl.textContent = state.students.length;
+    if (totalCoursesEl) totalCoursesEl.textContent = state.courses.length;
 
-    if (studentsList.length === 0) {
-        avgAgeEl.textContent = '0';
+    if (!state.students || state.students.length === 0) {
+        if (avgAgeEl) avgAgeEl.textContent = '0';
         return;
     }
 
-    const totalAge = studentsList.reduce((sum, s) => sum + s.age, 0);
-    const avg = (totalAge / studentsList.length).toFixed(1);
-    avgAgeEl.textContent = avg;
+    const totalAge = state.students.reduce((sum, s) => sum + s.age, 0);
+    const avg = (totalAge / state.students.length).toFixed(1);
+    if (avgAgeEl) avgAgeEl.textContent = avg;
 }
 
 function renderStudentsGrid(studentsList) {
@@ -180,6 +204,8 @@ function renderStudentsGrid(studentsList) {
 
 function initStudentForm() {
     const form = document.getElementById('add-student-form');
+    if (!form) return;
+
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
 
@@ -273,66 +299,229 @@ async function handleDeleteStudent(studentId) {
     }
 }
 
-function initControls() {
-    // Refresh Button
-    document.getElementById('btn-refresh-students').addEventListener('click', fetchStudents);
+/* ==========================================================================
+   Part 1 (B): Core Course Management (CRUD)
+   ========================================================================== */
+async function fetchCourses() {
+    const grid = document.getElementById('courses-grid');
+    if (!grid) return;
 
-    // Insertion Sort Button
-    document.getElementById('btn-insertion-sort').addEventListener('click', async () => {
+    grid.innerHTML = `
+        <div class="loading-state">
+            <div class="spinner"></div>
+            <p>Loading course offerings from database...</p>
+        </div>`;
+
+    try {
+        const response = await fetch(`${API_BASE}/api/courses`);
+        if (!response.ok) throw new Error('Failed to fetch course records');
+
+        state.courses = await response.json();
+        renderCoursesGrid(state.courses);
+        updateHeaderStats();
+    } catch (err) {
+        grid.innerHTML = `<div class="loading-state"><p style="color: var(--danger)">Error: ${escapeHtml(err.message)}</p></div>`;
+        showToast(err.message, 'error');
+    }
+}
+
+function renderCoursesGrid(coursesList) {
+    const grid = document.getElementById('courses-grid');
+    if (!grid) return;
+    grid.innerHTML = '';
+
+    if (!coursesList || coursesList.length === 0) {
+        grid.innerHTML = `
+            <div class="loading-state">
+                <p>No course offerings found. Create a new course above!</p>
+            </div>`;
+        return;
+    }
+
+    coursesList.forEach(course => {
+        const card = document.createElement('div');
+        card.className = 'course-card';
+        card.setAttribute('data-id', course.id);
+
+        const student = state.students.find(s => s.id === course.student_id);
+        const studentText = student ? `${student.name} (ID #${student.id})` : 'Unassigned';
+
+        card.innerHTML = `
+            <div class="card-top">
+                <div class="course-code-badge">${escapeHtml(course.code)}</div>
+                <span class="badge badge-purple">Course ID #${course.id}</span>
+            </div>
+            <div class="card-info">
+                <div class="course-title-text">${escapeHtml(course.title)}</div>
+                <div class="course-desc-text">${escapeHtml(course.description || 'No description provided.')}</div>
+            </div>
+            <div class="age-editor-row">
+                <span class="age-label">Enrolled Student:</span>
+                <span class="badge badge-info">${escapeHtml(studentText)}</span>
+            </div>
+            <div class="card-bottom-actions">
+                <button class="btn btn-danger btn-sm" onclick="handleDeleteCourse(${course.id})">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                    Delete Course
+                </button>
+            </div>
+        `;
+        grid.appendChild(card);
+    });
+}
+
+function initCourseForm() {
+    const form = document.getElementById('add-course-form');
+    const refreshBtn = document.getElementById('btn-refresh-courses');
+
+    if (refreshBtn) refreshBtn.addEventListener('click', fetchCourses);
+
+    if (!form) return;
+
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const codeInput = document.getElementById('course-code');
+        const titleInput = document.getElementById('course-title');
+        const descInput = document.getElementById('course-description');
+        const studentSelect = document.getElementById('course-student-id');
+        const btn = document.getElementById('btn-add-course');
+
+        const studentIdVal = studentSelect.value ? parseInt(studentSelect.value, 10) : null;
+
+        const payload = {
+            code: codeInput.value.trim(),
+            title: titleInput.value.trim(),
+            description: descInput.value.trim() || null,
+            student_id: studentIdVal
+        };
+
+        btn.disabled = true;
+        btn.innerHTML = `<div class="spinner" style="width:16px;height:16px;border-width:2px;"></div> Creating...`;
+
         try {
-            const response = await fetch(`${API_BASE}/api/students/sorted-by-age`);
-            if (!response.ok) throw new Error('Failed to run insertion sort');
+            const response = await fetch(`${API_BASE}/api/courses`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
 
-            const sortedStudents = await response.json();
-            renderStudentsGrid(sortedStudents);
-            document.getElementById('active-filter-badge').style.display = 'inline-block';
-            document.getElementById('active-filter-badge').textContent = 'Sorted by Age (Insertion Sort)';
-            document.getElementById('btn-reset-search').style.display = 'inline-block';
-            showToast('Students sorted by Age using custom Insertion Sort!', 'success');
+            if (!response.ok) {
+                const errData = await response.json();
+                throw new Error(errData.detail || 'Failed to add course');
+            }
+
+            const newCourse = await response.json();
+            showToast(`Course ${newCourse.code} - ${newCourse.title} created successfully!`, 'success');
+            form.reset();
+            fetchCourses();
         } catch (err) {
             showToast(err.message, 'error');
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = `
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                Add Course`;
         }
     });
+}
 
-    // Binary Search Handler
+async function handleDeleteCourse(courseId) {
+    if (!confirm('Are you sure you want to delete this course offering?')) return;
+
+    try {
+        const response = await fetch(`${API_BASE}/api/courses/${courseId}`, {
+            method: 'DELETE'
+        });
+
+        if (!response.ok) {
+            const errData = await response.json();
+            throw new Error(errData.detail || 'Failed to delete course');
+        }
+
+        showToast(`Course ID #${courseId} deleted successfully.`, 'info');
+        fetchCourses();
+    } catch (err) {
+        showToast(err.message, 'error');
+    }
+}
+
+function initControls() {
+    const refreshBtn = document.getElementById('btn-refresh-students');
+    if (refreshBtn) refreshBtn.addEventListener('click', fetchStudents);
+
+    const sortBtn = document.getElementById('btn-insertion-sort');
+    if (sortBtn) {
+        sortBtn.addEventListener('click', async () => {
+            try {
+                const response = await fetch(`${API_BASE}/api/students/sorted-by-age`);
+                if (!response.ok) throw new Error('Failed to run insertion sort');
+
+                const sortedStudents = await response.json();
+                renderStudentsGrid(sortedStudents);
+                const filterBadge = document.getElementById('active-filter-badge');
+                const resetBtn = document.getElementById('btn-reset-search');
+
+                if (filterBadge) {
+                    filterBadge.style.display = 'inline-block';
+                    filterBadge.textContent = 'Sorted by Age (Insertion Sort)';
+                }
+                if (resetBtn) resetBtn.style.display = 'inline-block';
+
+                showToast('Students sorted by Age using custom Insertion Sort!', 'success');
+            } catch (err) {
+                showToast(err.message, 'error');
+            }
+        });
+    }
+
     const searchInput = document.getElementById('binary-search-input');
     const searchBtn = document.getElementById('btn-binary-search');
     const resetBtn = document.getElementById('btn-reset-search');
 
-    const handleBinarySearch = async () => {
-        const query = searchInput.value.trim();
-        if (!query) {
-            showToast('Please enter a name to search using Binary Search.', 'info');
-            return;
-        }
-
-        try {
-            const response = await fetch(`${API_BASE}/api/students/search?name=${encodeURIComponent(query)}`);
-            if (!response.ok) {
-                const errData = await response.json();
-                throw new Error(errData.detail || 'No student found');
+    if (searchBtn && searchInput) {
+        const handleBinarySearch = async () => {
+            const query = searchInput.value.trim();
+            if (!query) {
+                showToast('Please enter a name to search using Binary Search.', 'info');
+                return;
             }
 
-            const matches = await response.json();
-            renderStudentsGrid(matches);
-            document.getElementById('active-filter-badge').style.display = 'inline-block';
-            document.getElementById('active-filter-badge').textContent = `Binary Search Match: "${query}"`;
-            resetBtn.style.display = 'inline-block';
-            showToast(`Binary Search found ${matches.length} matching student(s)!`, 'success');
-        } catch (err) {
-            showToast(err.message, 'error');
-        }
-    };
+            try {
+                const response = await fetch(`${API_BASE}/api/students/search?name=${encodeURIComponent(query)}`);
+                if (!response.ok) {
+                    const errData = await response.json();
+                    throw new Error(errData.detail || 'No student found');
+                }
 
-    searchBtn.addEventListener('click', handleBinarySearch);
-    searchInput.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') handleBinarySearch();
-    });
+                const matches = await response.json();
+                renderStudentsGrid(matches);
+                const filterBadge = document.getElementById('active-filter-badge');
 
-    resetBtn.addEventListener('click', () => {
-        searchInput.value = '';
-        fetchStudents();
-    });
+                if (filterBadge) {
+                    filterBadge.style.display = 'inline-block';
+                    filterBadge.textContent = `Binary Search Match: "${query}"`;
+                }
+                if (resetBtn) resetBtn.style.display = 'inline-block';
+
+                showToast(`Binary Search found ${matches.length} matching student(s)!`, 'success');
+            } catch (err) {
+                showToast(err.message, 'error');
+            }
+        };
+
+        searchBtn.addEventListener('click', handleBinarySearch);
+        searchInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') handleBinarySearch();
+        });
+    }
+
+    if (resetBtn) {
+        resetBtn.addEventListener('click', () => {
+            if (searchInput) searchInput.value = '';
+            fetchStudents();
+        });
+    }
 }
 
 /* ==========================================================================
@@ -342,31 +531,98 @@ function initAlgorithmsTab() {
     const reportBtn = document.getElementById('btn-generate-report');
     const reportBox = document.getElementById('report-output');
 
-    reportBtn.addEventListener('click', async () => {
-        reportBox.innerHTML = '<div class="spinner" style="margin: 20px auto;"></div>';
+    if (reportBtn && reportBox) {
+        reportBtn.addEventListener('click', async () => {
+            reportBox.innerHTML = '<div class="spinner" style="margin: 20px auto;"></div>';
 
-        try {
-            const response = await fetch(`${API_BASE}/api/report`);
-            if (!response.ok) throw new Error('Failed to generate report');
+            try {
+                const response = await fetch(`${API_BASE}/api/report`);
+                if (!response.ok) throw new Error('Failed to generate report');
 
-            const data = await response.json();
-            reportBox.textContent = data.raw_text || data.formatted_report.join('\n');
-            showToast('Report endpoint successfully generated!', 'success');
-        } catch (err) {
-            reportBox.textContent = `Error: ${err.message}`;
-            showToast(err.message, 'error');
-        }
-    });
+                const data = await response.json();
+                reportBox.textContent = data.raw_text || data.formatted_report.join('\n');
+                showToast('Report endpoint successfully generated!', 'success');
+            } catch (err) {
+                reportBox.textContent = `Error: ${err.message}`;
+                showToast(err.message, 'error');
+            }
+        });
+    }
 }
 
 /* ==========================================================================
-   Part 3: AI Assistant Features
+   Part 3: AI Assistant / Helper
    ========================================================================== */
+function initAIHelperTab() {
+    const inputField = document.getElementById('ai-helper-input');
+    const runBtn = document.getElementById('btn-run-ai-helper');
+    const resultsContainer = document.getElementById('ai-helper-results');
+    const chips = document.querySelectorAll('.assistant-chip');
+
+    if (!runBtn || !inputField) return;
+
+    const handleAskHelper = async (promptText) => {
+        const prompt = promptText || inputField.value.trim();
+        if (!prompt) {
+            showToast('Please enter a query for the AI Assistant.', 'info');
+            return;
+        }
+
+        runBtn.disabled = true;
+        runBtn.innerHTML = `<div class="spinner" style="width:16px;height:16px;border-width:2px;"></div> Thinking...`;
+
+        try {
+            const response = await fetch(`${API_BASE}/api/ai/helper`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ prompt, context: 'StudyTrack Full Stack Portal' })
+            });
+
+            if (!response.ok) throw new Error('AI Assistant response error');
+
+            const data = await response.json();
+
+            document.getElementById('ai-helper-response-text').textContent = data.response;
+            document.getElementById('ai-helper-timestamp').textContent = data.timestamp;
+
+            const list = document.getElementById('ai-helper-suggestions-list');
+            list.innerHTML = data.suggestions.map(s => `<li>${escapeHtml(s)}</li>`).join('');
+
+            document.getElementById('ai-helper-raw-json').textContent = JSON.stringify(data, null, 2);
+
+            resultsContainer.style.display = 'block';
+            showToast('AI Assistant generated response & study recommendations!', 'success');
+        } catch (err) {
+            showToast(err.message, 'error');
+        } finally {
+            runBtn.disabled = false;
+            runBtn.innerHTML = `
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+                Ask Assistant`;
+        }
+    };
+
+    runBtn.addEventListener('click', () => handleAskHelper());
+    inputField.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') handleAskHelper();
+    });
+
+    chips.forEach(chip => {
+        chip.addEventListener('click', () => {
+            const p = chip.getAttribute('data-prompt');
+            inputField.value = p;
+            handleAskHelper(p);
+        });
+    });
+}
+
 function initAISummarizerTab() {
     const inputArea = document.getElementById('summarizer-input');
     const runBtn = document.getElementById('btn-run-summary');
     const sampleBtn = document.getElementById('btn-sample-summary');
     const resultsContainer = document.getElementById('summary-results');
+
+    if (!runBtn || !inputArea) return;
 
     sampleBtn.addEventListener('click', () => {
         inputArea.value = `Binary search is an efficient divide and conquer algorithm for finding an item from a sorted list of items. It works by repeatedly dividing in half the portion of the list that could contain the item until you have narrowed down the possible locations to just one. The time complexity of binary search is O(log n), making it exponentially faster than linear search for large datasets.`;
@@ -393,7 +649,6 @@ function initAISummarizerTab() {
 
             const data = await response.json();
 
-            // Populate UI
             document.getElementById('summary-topic').textContent = data.topic;
             
             const diffBadge = document.getElementById('summary-difficulty-badge');
@@ -433,7 +688,9 @@ async function fetchNotesDataset() {
 function initSemanticSearchTab() {
     const searchInput = document.getElementById('semantic-search-input');
     const searchBtn = document.getElementById('btn-run-semantic-search');
-    const chips = document.querySelectorAll('.chip-btn');
+    const chips = document.querySelectorAll('.chip-btn:not(.assistant-chip)');
+
+    if (!searchBtn || !searchInput) return;
 
     const handleSearch = async (queryText) => {
         const query = queryText || searchInput.value.trim();
@@ -475,14 +732,17 @@ function initSemanticSearchTab() {
     chips.forEach(chip => {
         chip.addEventListener('click', () => {
             const q = chip.getAttribute('data-query');
-            searchInput.value = q;
-            handleSearch(q);
+            if (q) {
+                searchInput.value = q;
+                handleSearch(q);
+            }
         });
     });
 }
 
 function renderSemanticNotes(notesList) {
     const container = document.getElementById('semantic-search-results');
+    if (!container) return;
     container.innerHTML = '';
 
     notesList.forEach(note => {

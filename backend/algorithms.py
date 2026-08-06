@@ -3,20 +3,17 @@ from typing import List, Dict, Any, Tuple
 
 def insertion_sort_by_age(students: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     """
-    Sorts a list of student dictionaries by Age using Insertion Sort algorithm.
+    Sorts a list of student dictionaries by Age using custom Insertion Sort algorithm.
     Time Complexity:
       Best Case: O(n) - when already sorted
       Worst Case: O(n^2) - when sorted in reverse order
     """
-    # Create a copy so we don't mutate the original caller list unexpectedly
     arr = list(students)
     n = len(arr)
     
     for i in range(1, n):
         key_item = arr[i]
         j = i - 1
-        # Move elements of arr[0..i-1] that are greater than key_item['age']
-        # to one position ahead of their current position
         while j >= 0 and arr[j]["age"] > key_item["age"]:
             arr[j + 1] = arr[j]
             j -= 1
@@ -27,8 +24,8 @@ def insertion_sort_by_age(students: List[Dict[str, Any]]) -> List[Dict[str, Any]
 
 def insertion_sort_by_name(students: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     """
-    Sorts a list of student dictionaries by Name using Insertion Sort algorithm.
-    Required as a pre-requisite for Binary Search on Name.
+    Sorts a list of student dictionaries by Name using custom Insertion Sort algorithm.
+    Required prerequisite for Binary Search on Name.
     """
     arr = list(students)
     n = len(arr)
@@ -46,7 +43,7 @@ def insertion_sort_by_name(students: List[Dict[str, Any]]) -> List[Dict[str, Any
 
 def binary_search_by_name(students: List[Dict[str, Any]], target_name: str) -> Tuple[List[Dict[str, Any]], int]:
     """
-    Searches for a student by Name using Binary Search algorithm.
+    Searches for a student by Name using custom Binary Search algorithm.
     Returns a tuple of (matched_students_list, matched_index).
     If no match is found, returns ([], -1).
     """

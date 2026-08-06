@@ -27,7 +27,6 @@ from backend.ai_assistant import (
     perform_semantic_search,
     NOTES_DATASET,
 )
-
 # Initialize Database Tables
 Base.metadata.create_all(bind=engine)
 
@@ -45,7 +44,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
 
 # Seed initial student data if database is empty
 def seed_initial_data(db: Session):
@@ -68,7 +66,6 @@ def startup_event():
         seed_initial_data(db)
     finally:
         db.close()
-
 
 # ----------------------------------------------------
 # PART 1: Core Student CRUD Endpoints
@@ -114,7 +111,6 @@ def update_student_age(
     db.refresh(db_student)
     return db_student
 
-
 @app.delete("/students/{student_id}", status_code=status.HTTP_200_OK)
 @app.delete("/api/students/{student_id}", status_code=status.HTTP_200_OK)
 def delete_student(student_id: int, db: Session = Depends(get_db)):
@@ -126,7 +122,6 @@ def delete_student(student_id: int, db: Session = Depends(get_db)):
     db.delete(db_student)
     db.commit()
     return {"message": f"Student ID {student_id} successfully deleted."}
-
 
 # ----------------------------------------------------
 # PART 2: Algorithm Endpoints (Insertion Sort, Binary Search, Report)
@@ -142,8 +137,7 @@ def get_students_sorted_by_age(db: Session = Depends(get_db)):
     students = db.query(Student).all()
     student_dicts = [s.to_dict() for s in students]
     sorted_dicts = insertion_sort_by_age(student_dicts)
-    return sorted_dicts
-
+    return sorted_dicts 
 
 @app.get("/students/search", response_model=List[StudentResponse])
 @app.get("/api/students/search", response_model=List[StudentResponse])
@@ -161,7 +155,6 @@ def search_student_by_name(name: str = Query(..., min_length=1), db: Session = D
         
     return matches
 
-
 @app.get("/report")
 @app.get("/api/report")
 def get_report(db: Session = Depends(get_db)):
@@ -178,8 +171,6 @@ def get_report(db: Session = Depends(get_db)):
         "formatted_report": report_lines,
         "raw_text": "\n".join(report_lines)
     }
-
-
 # ----------------------------------------------------
 # PART 3: AI Assistant Endpoints
 # ----------------------------------------------------

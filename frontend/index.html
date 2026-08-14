@@ -3,13 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>StudyTrack | Student & Course Management & AI Assistant</title>
-    <meta name="description" content="StudyTrack - Modern Student & Course Management System featuring Custom Algorithms, Semantic Search, and AI Study Assistant.">
-    <!-- Google Fonts -->
+    <title>StudyTrack | Assessment Compliant Management System</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
-    <!-- Stylesheet -->
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -25,7 +22,7 @@
                 </div>
                 <div class="brand-text">
                     <h2>StudyTrack</h2>
-                    <span class="version-badge">v2.0 AI Pro</span>
+                    <span class="version-badge">Assessment Ready</span>
                 </div>
             </div>
 
@@ -37,7 +34,7 @@
                         <rect x="14" y="14" width="7" height="7" rx="1"></rect>
                         <rect x="3" y="14" width="7" height="7" rx="1"></rect>
                     </svg>
-                    <span>Students</span>
+                    <span>Student Roster</span>
                 </button>
 
                 <button class="nav-item" data-tab="courses">
@@ -57,33 +54,17 @@
 
                 <button class="nav-item" data-tab="ai-helper">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <path d="M12 16v-4"></path>
+                        <path d="M12 8h.01"></path>
                     </svg>
-                    <span>AI Assistant</span>
-                </button>
-
-                <button class="nav-item" data-tab="ai-summarizer">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                        <polyline points="14 2 14 8 20 8"></polyline>
-                        <line x1="16" y1="13" x2="8" y2="13"></line>
-                        <line x1="16" y1="17" x2="8" y2="17"></line>
-                    </svg>
-                    <span>AI Summarizer</span>
-                </button>
-
-                <button class="nav-item" data-tab="semantic-search">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <circle cx="11" cy="11" r="8"></circle>
-                        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-                    </svg>
-                    <span>Semantic Search</span>
+                    <span>AI Helper</span>
                 </button>
             </nav>
 
             <div class="sidebar-footer">
                 <div class="tech-badge">
-                    <span class="dot pulse"></span> FastAPI + SQLite + AI Engine
+                    <span class="dot pulse"></span> FastAPI + SQLite + Algorithms
                 </div>
             </div>
         </aside>
@@ -93,17 +74,13 @@
             <!-- Header Bar -->
             <header class="top-header">
                 <div class="header-title">
-                    <h1 id="page-title">Student Dashboard</h1>
-                    <p id="page-subtitle">Manage student profiles, edit ages, and view records</p>
+                    <h1 id="page-title">Student Roster Management</h1>
+                    <p id="page-subtitle">Manage student profiles, edit ages, view roster, and filter records</p>
                 </div>
                 <div class="header-stats">
                     <div class="stat-pill">
                         <span class="stat-label">Total Students</span>
                         <span class="stat-value" id="stat-total-students">0</span>
-                    </div>
-                    <div class="stat-pill">
-                        <span class="stat-label">Total Courses</span>
-                        <span class="stat-value" id="stat-total-courses">0</span>
                     </div>
                     <div class="stat-pill">
                         <span class="stat-label">Average Age</span>
@@ -112,11 +89,15 @@
                 </div>
             </header>
 
-            <!-- Notification Toast Container -->
+            <!-- REQUIREMENT 23: Visible Error Banner -->
+            <div id="error-banner" class="error-banner" style="display: none;"></div>
+
+            <!-- Toast Notifications Container -->
             <div id="toast-container" class="toast-container"></div>
 
-            <!-- TAB 1: STUDENT DASHBOARD -->
+            <!-- TAB 1: STUDENT ROSTER DASHBOARD -->
             <section id="tab-dashboard" class="tab-page active">
+                <!-- Add Student Form Card -->
                 <div class="glass-card form-card">
                     <div class="card-header">
                         <div class="card-title-group">
@@ -130,18 +111,19 @@
                             </div>
                             <h3>Register New Student</h3>
                         </div>
-                        <span class="form-hint">Add student profile into SQLite database</span>
+                        <span class="form-hint">Email must contain '@' and Age must be greater than 0</span>
                     </div>
 
-                    <form id="add-student-form" class="student-form">
+                    <!-- REQUIREMENT 21: #student-form -->
+                    <form id="student-form" class="student-form">
                         <div class="form-row">
                             <div class="input-group">
                                 <label for="student-name">Full Name</label>
-                                <input type="text" id="student-name" placeholder="e.g. Rohan Sharma" required>
+                                <input type="text" id="student-name" placeholder="e.g. Aditi Rao" required>
                             </div>
                             <div class="input-group">
                                 <label for="student-email">Email Address</label>
-                                <input type="email" id="student-email" placeholder="e.g. rohan@studytrack.io" required>
+                                <input type="email" id="student-email" placeholder="e.g. aditi@example.com" required>
                             </div>
                             <div class="input-group">
                                 <label for="student-age">Age</label>
@@ -160,6 +142,7 @@
                     </form>
                 </div>
 
+                <!-- Controls & Filters Bar -->
                 <div class="controls-bar">
                     <div class="search-box">
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -167,42 +150,37 @@
                             <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
                         </svg>
                         <input type="text" id="binary-search-input" placeholder="Binary Search by Name...">
-                        <button class="btn btn-secondary btn-sm" id="btn-binary-search">Search</button>
-                        <button class="btn btn-ghost btn-sm" id="btn-reset-search" style="display:none;">Clear</button>
+                        <button class="btn btn-secondary btn-sm" id="btn-binary-search">Search Name</button>
+                    </div>
+
+                    <div class="filter-box">
+                        <label for="min-age-filter-input">Min Age Filter:</label>
+                        <input type="number" id="min-age-filter-input" placeholder="e.g. 20" min="1" style="width: 80px;">
+                        <button class="btn btn-secondary btn-sm" id="btn-apply-min-age">Filter</button>
                     </div>
 
                     <div class="sort-actions">
-                        <button class="btn btn-secondary" id="btn-insertion-sort">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <line x1="12" y1="5" x2="12" y2="19"></line>
-                                <polyline points="19 12 12 19 5 12"></polyline>
-                            </svg>
-                            Insertion Sort (By Age)
-                        </button>
-                        <button class="btn btn-ghost" id="btn-refresh-students">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <polyline points="23 4 23 10 17 10"></polyline>
-                                <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
-                            </svg>
-                            Refresh
-                        </button>
+                        <button class="btn btn-secondary" id="btn-sort-age">Sort by Age</button>
+                        <button class="btn btn-secondary" id="btn-sort-name">Sort by Name</button>
+                        <button class="btn btn-ghost" id="btn-reset-roster">Reset Roster</button>
                     </div>
                 </div>
 
                 <div class="cards-grid-header">
-                    <h2>Student Records</h2>
-                    <span id="active-filter-badge" class="badge badge-info" style="display: none;">Filtered View</span>
+                    <h2>Student Roster</h2>
+                    <span id="active-filter-badge" class="badge badge-info" style="display: none;">Filtered Roster</span>
                 </div>
 
-                <div id="students-grid" class="students-grid">
+                <!-- REQUIREMENT 21: #roster-list (Container for event delegation) -->
+                <div id="roster-list" class="students-grid">
                     <div class="loading-state">
                         <div class="spinner"></div>
-                        <p>Loading student profiles from database...</p>
+                        <p>Loading student roster...</p>
                     </div>
                 </div>
             </section>
 
-            <!-- TAB 2: COURSES MANAGEMENT -->
+            <!-- TAB 2: COURSE OFFERINGS -->
             <section id="tab-courses" class="tab-page">
                 <div class="glass-card form-card">
                     <div class="card-header">
@@ -213,60 +191,36 @@
                                     <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
                                 </svg>
                             </div>
-                            <h3>Register New Course</h3>
+                            <h3>Create New Course</h3>
                         </div>
-                        <span class="form-hint">Add course code, title, and link to enrolled student</span>
+                        <span class="form-hint">Credits must be between 1 and 6</span>
                     </div>
 
-                    <form id="add-course-form" class="course-form">
+                    <form id="course-form" class="student-form">
                         <div class="form-row">
                             <div class="input-group">
-                                <label for="course-code">Course Code</label>
-                                <input type="text" id="course-code" placeholder="e.g. CS101" required>
+                                <label for="course-name">Course Name</label>
+                                <input type="text" id="course-name" placeholder="e.g. Data Structures & Algorithms" required>
                             </div>
                             <div class="input-group">
-                                <label for="course-title">Course Title</label>
-                                <input type="text" id="course-title" placeholder="e.g. Data Structures & Algorithms" required>
+                                <label for="course-credits">Credits (1 - 6)</label>
+                                <input type="number" id="course-credits" min="1" max="6" placeholder="e.g. 4" required>
                             </div>
                             <div class="input-group">
-                                <label for="course-student-id">Enrolled Student</label>
-                                <select id="course-student-id">
-                                    <option value="">-- Optional: Select Student --</option>
+                                <label for="course-student-id">Assign Student</label>
+                                <select id="course-student-id" class="input-select">
+                                    <option value="">-- Select Student --</option>
                                 </select>
                             </div>
                         </div>
-                        <div class="form-group" style="margin-top: 12px;">
-                            <label for="course-description">Course Description</label>
-                            <input type="text" id="course-description" placeholder="e.g. Fundamental algorithm analysis, arrays, lists, and trees.">
-                        </div>
-                        <div class="form-actions" style="margin-top: 16px;">
-                            <button type="submit" class="btn btn-primary" id="btn-add-course">
-                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <line x1="12" y1="5" x2="12" y2="19"></line>
-                                    <line x1="5" y1="12" x2="19" y2="12"></line>
-                                </svg>
-                                Add Course
-                            </button>
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary" id="btn-add-course">Add Course</button>
                         </div>
                     </form>
                 </div>
 
-                <div class="cards-grid-header">
-                    <h2>Active Course Offerings</h2>
-                    <button class="btn btn-ghost btn-sm" id="btn-refresh-courses">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <polyline points="23 4 23 10 17 10"></polyline>
-                            <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
-                        </svg>
-                        Refresh Courses
-                    </button>
-                </div>
-
-                <div id="courses-grid" class="students-grid">
-                    <div class="loading-state">
-                        <div class="spinner"></div>
-                        <p>Loading course offerings from database...</p>
-                    </div>
+                <div id="courses-list" class="students-grid">
+                    <!-- Dynamic Courses Rendered Here -->
                 </div>
             </section>
 
@@ -279,222 +233,117 @@
                                 <div class="icon-bubble accent-purple">
                                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                         <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                                        <polyline points="14 2 14 8 20 8"></polyline>
                                     </svg>
                                 </div>
                                 <h3>Student Report Endpoint</h3>
                             </div>
-                            <button class="btn btn-primary btn-sm" id="btn-generate-report">Generate Report</button>
+                            <div class="report-controls">
+                                <input type="number" id="report-min-age-input" value="21" min="1" style="width: 70px;">
+                                <button class="btn btn-primary btn-sm" id="btn-generate-report">Generate Report</button>
+                            </div>
                         </div>
+
+                        <p class="card-desc">Formats student records meeting min_age ordered by Age using Insertion Sort.</p>
                         
-                        <p class="card-desc">Formats all student records ordered by Age using the Insertion Sort algorithm.</p>
-                        
+                        <div class="report-meta-bar">
+                            <span>Count Meeting Min Age: <strong id="report-count-output">0</strong></span>
+                        </div>
+
                         <div class="report-output-box" id="report-output">
-                            <div class="placeholder-text">Click "Generate Report" to view age-sorted report.</div>
+                            <div class="placeholder-text">Click "Generate Report" to view student report lines.</div>
                         </div>
                     </div>
 
+                    <!-- Algorithm Mechanics Cards -->
                     <div class="glass-card algo-card">
                         <div class="card-header">
-                            <div class="card-title-group">
-                                <div class="icon-bubble accent-cyan">
-                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                        <line x1="4" y1="21" x2="4" y2="14"></line>
-                                        <line x1="4" y1="10" x2="4" y2="3"></line>
-                                        <line x1="12" y1="21" x2="12" y2="12"></line>
-                                        <line x1="12" y1="8" x2="12" y2="3"></line>
-                                        <line x1="20" y1="21" x2="20" y2="16"></line>
-                                        <line x1="20" y1="12" x2="20" y2="3"></line>
-                                    </svg>
-                                </div>
-                                <h3>1. Insertion Sort</h3>
-                            </div>
+                            <h3>1. Insertion Sort</h3>
                             <span class="badge badge-purple">Time Complexity</span>
                         </div>
                         <div class="complexity-details">
                             <div class="complexity-box">
                                 <span class="comp-label">Best Case</span>
                                 <span class="comp-val">O(n)</span>
-                                <p class="comp-desc">Occurs when the input array is already sorted. The outer loop runs $n-1$ times while the inner while-condition fails on first comparison ($1$ check per element).</p>
+                                <p class="comp-desc">Input is already sorted; inner loop terminates on 1 comparison per element.</p>
                             </div>
                             <div class="complexity-box">
                                 <span class="comp-label">Worst Case</span>
                                 <span class="comp-val">O(n²)</span>
-                                <p class="comp-desc">Occurs when the input array is sorted in reverse order. Every element must be shifted past all previously sorted elements ($n(n-1)/2$ shifts).</p>
+                                <p class="comp-desc">Input is reverse sorted; requires n(n-1)/2 comparisons and shifts.</p>
                             </div>
                         </div>
                     </div>
 
                     <div class="glass-card algo-card">
                         <div class="card-header">
-                            <div class="card-title-group">
-                                <div class="icon-bubble accent-green">
-                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                        <circle cx="11" cy="11" r="8"></circle>
-                                        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-                                    </svg>
-                                </div>
-                                <h3>2. Binary Search</h3>
-                            </div>
+                            <h3>2. Binary Search</h3>
                             <span class="badge badge-green">O(log n) Complexity</span>
                         </div>
-                        <p class="card-desc">Searches for a student by Name. Requires array to be sorted by Name first using Insertion Sort, then iteratively halves the search interval by comparing middle element pointers.</p>
+                        <p class="card-desc">Handwritten iterative search using exact midpoint formula: <code>mid = low + (high - low) // 2</code> on a pre-sorted name list.</p>
                     </div>
                 </div>
             </section>
 
-            <!-- TAB 4: AI ASSISTANT / HELPER -->
+            <!-- REQUIREMENT 26: TAB 4: AI HELPER PANEL -->
             <section id="tab-ai-helper" class="tab-page">
-                <div class="glass-card full-card">
-                    <div class="card-header">
-                        <div class="card-title-group">
-                            <div class="icon-bubble accent-pink">
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
-                                </svg>
-                            </div>
-                            <h3>AI Study Assistant & Companion</h3>
-                        </div>
-                        <span class="badge badge-pink">Part 3 AI Assistant</span>
-                    </div>
-
-                    <p class="card-desc">Ask your AI Assistant for study advice, algorithm explanations, course tips, or preparation strategies.</p>
-
-                    <div class="search-input-group">
-                        <input type="text" id="ai-helper-input" placeholder="e.g. How can I prepare for my Data Structures binary search test?">
-                        <button class="btn btn-primary" id="btn-run-ai-helper">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <line x1="22" y1="2" x2="11" y2="13"></line>
-                                <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
-                            </svg>
-                            Ask Assistant
-                        </button>
-                    </div>
-
-                    <div class="sample-queries">
-                        <span class="sample-label">Suggested prompts:</span>
-                        <button class="chip-btn assistant-chip" data-prompt="How do I prepare for my Data Structures binary search test?">Binary Search Tips</button>
-                        <button class="chip-btn assistant-chip" data-prompt="Explain the difference between Insertion Sort best case and worst case.">Insertion Sort Complexity</button>
-                        <button class="chip-btn assistant-chip" data-prompt="What courses should I register for in Computer Science?">Course Guidance</button>
-                        <button class="chip-btn assistant-chip" data-prompt="How does FastAPI connect with SQLite ORM models?">FastAPI & SQLite</button>
-                    </div>
-
-                    <div id="ai-helper-results" class="summary-results-container" style="display:none; margin-top:24px;">
-                        <div class="json-card" style="margin-bottom:16px;">
-                            <span class="json-label">Assistant Response</span>
-                            <p id="ai-helper-response-text" class="card-desc" style="color:var(--text-main); font-size:1.05rem; line-height:1.6; margin-top:8px;"></p>
-                        </div>
-
-                        <div class="key-points-box">
-                            <h5>Actionable Study Recommendations</h5>
-                            <ul id="ai-helper-suggestions-list"></ul>
-                        </div>
-
-                        <div class="raw-json-box">
-                            <div class="raw-json-header">Raw Response Payload (<span id="ai-helper-timestamp"></span>)</div>
-                            <pre><code id="ai-helper-raw-json">{}</code></pre>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            <!-- TAB 5: AI SUMMARIZER -->
-            <section id="tab-ai-summarizer" class="tab-page">
-                <div class="glass-card full-card">
-                    <div class="card-header">
-                        <div class="card-title-group">
-                            <div class="icon-bubble accent-pink">
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <path d="M12 2a10 10 0 1 0 10 10H12V2z"></path>
-                                    <path d="M12 12L2.1 12a10 10 0 0 0 9.9 10V12z"></path>
-                                </svg>
-                            </div>
-                            <h3>Text Summarizer & Analyzer</h3>
-                        </div>
-                        <span class="badge badge-pink">Part 3 AI Feature</span>
-                    </div>
-
-                    <p class="card-desc">Paste long text or study notes below. The AI Summarizer will extract the core topic, key points, and difficulty level in structured JSON format.</p>
-
-                    <div class="summarizer-input-container">
-                        <textarea id="summarizer-input" placeholder="Paste your study passage here..." rows="6"></textarea>
-                        <div class="summarizer-actions">
-                            <button class="btn btn-ghost btn-sm" id="btn-sample-summary">Load Sample Text</button>
-                            <button class="btn btn-primary" id="btn-run-summary">
-                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <polygon points="5 3 19 12 5 21 5 3"></polygon>
-                                </svg>
-                                Summarize Text
-                            </button>
-                        </div>
-                    </div>
-
-                    <div class="summary-results-container" id="summary-results" style="display:none;">
-                        <h4 class="section-subtitle">Generated JSON Response</h4>
-                        
-                        <div class="json-cards-grid">
-                            <div class="json-card">
-                                <span class="json-label">Topic</span>
-                                <span class="json-val-highlight" id="summary-topic">-</span>
-                            </div>
-                            <div class="json-card">
-                                <span class="json-label">Difficulty</span>
-                                <span class="badge" id="summary-difficulty-badge">Medium</span>
-                            </div>
-                        </div>
-
-                        <div class="key-points-box">
-                            <h5>Key Points</h5>
-                            <ul id="summary-key-points-list"></ul>
-                        </div>
-
-                        <div class="raw-json-box">
-                            <div class="raw-json-header">Raw JSON Payload</div>
-                            <pre><code id="summary-raw-json">{}</code></pre>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            <!-- TAB 6: SEMANTIC SEARCH -->
-            <section id="tab-semantic-search" class="tab-page">
                 <div class="glass-card full-card">
                     <div class="card-header">
                         <div class="card-title-group">
                             <div class="icon-bubble accent-cyan">
                                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                     <circle cx="12" cy="12" r="10"></circle>
-                                    <line x1="2" y1="12" x2="22" y2="12"></line>
-                                    <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+                                    <path d="M12 16v-4"></path>
+                                    <path d="M12 8h.01"></path>
                                 </svg>
                             </div>
-                            <h3>Semantic Search with Cosine Similarity</h3>
+                            <h3>AI Helper & Study Notes Panel</h3>
                         </div>
-                        <span class="badge badge-info">Dataset of 5 Notes</span>
+                        <span class="badge badge-info">12-Word Mock Vector & Cosine Similarity</span>
                     </div>
 
-                    <p class="card-desc">Ask any question or search concept. The engine computes term-frequency vectors and Cosine Similarity scores ($\cos(\theta) = \frac{A \cdot B}{\|A\| \|B\|}$) across all 5 pre-loaded computer science notes.</p>
+                    <!-- Note Summarizer Section -->
+                    <div class="ai-section">
+                        <h4>1. Note Summarizer</h4>
+                        <div class="summarizer-input-container">
+                            <textarea id="ai-notes-input" placeholder="Enter study notes here to summarize..." rows="4"></textarea>
+                            <div class="summarizer-actions">
+                                <button class="btn btn-primary" id="btn-summarize">Summarize Note</button>
+                            </div>
+                        </div>
 
-                    <div class="search-input-group">
-                        <input type="text" id="semantic-search-input" placeholder="e.g. How does divide and conquer work in search algorithms?">
-                        <button class="btn btn-primary" id="btn-run-semantic-search">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <circle cx="11" cy="11" r="8"></circle>
-                                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-                            </svg>
-                            Search Notes
-                        </button>
+                        <div class="summary-results-container" id="summary-results-card" style="display:none;">
+                            <div class="json-cards-grid">
+                                <div class="json-card">
+                                    <span class="json-label">Topic</span>
+                                    <span class="json-val-highlight" id="summary-topic">untitled</span>
+                                </div>
+                                <div class="json-card">
+                                    <span class="json-label">Difficulty</span>
+                                    <span class="badge" id="summary-difficulty">easy</span>
+                                </div>
+                            </div>
+
+                            <div class="key-points-box">
+                                <h5>Key Points</h5>
+                                <ul id="summary-key-points"></ul>
+                            </div>
+                        </div>
                     </div>
 
-                    <div class="sample-queries">
-                        <span class="sample-label">Try sample queries:</span>
-                        <button class="chip-btn" data-query="What is binary search time complexity?">Binary Search</button>
-                        <button class="chip-btn" data-query="How does FastAPI provide interactive documentation?">FastAPI Specs</button>
-                        <button class="chip-btn" data-query="What is SQLite ORM database mapping?">SQLite ORM</button>
-                        <button class="chip-btn" data-query="Explain Cosine Similarity vector angle calculation.">Cosine Vector</button>
-                    </div>
+                    <hr class="divider">
 
-                    <div class="notes-results-list" id="semantic-search-results"></div>
+                    <!-- Semantic Search Notes Section -->
+                    <div class="ai-section">
+                        <h4>2. Semantic Search Notes</h4>
+                        <div class="search-input-group">
+                            <input type="text" id="ai-search-query" placeholder="Enter query (e.g. insertion sort binary search, fastapi validation, sql join)...">
+                            <button class="btn btn-primary" id="btn-search-notes">Search Notes</button>
+                        </div>
+
+                        <div class="notes-results-list" id="search-results-list">
+                            <!-- Dynamic Ranked Notes Rendered Here -->
+                        </div>
+                    </div>
                 </div>
             </section>
         </main>

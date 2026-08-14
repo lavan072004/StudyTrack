@@ -6,67 +6,63 @@ from backend.models import Student, Course
 def seed_database(db: Session) -> None:
     """
     Seeds initial student and course records into the SQLite database.
-    Checks count to ensure idempotent operation.
+    Replaces old seed data with the exact 8 students specified in the assessment.
     """
-    # Create tables if not present
     Base.metadata.create_all(bind=engine)
 
     if db.query(Student).count() == 0:
-        print("[SEED] Seeding initial Student records...")
-        sample_students = [
-            Student(name="Rohan", email="rohan@studytrack.io", age=19),
-            Student(name="Farhan", email="farhan@studytrack.io", age=20),
-            Student(name="Priya", email="priya@studytrack.io", age=21),
-            Student(name="Aanya", email="aanya@studytrack.io", age=18),
-            Student(name="Dev", email="dev@studytrack.io", age=22),
+        print("[SEED] Seeding exact 8 Student records...")
+        exact_students = [
+            Student(name="Aditi Rao", email="aditi@example.com", age=20),
+            Student(name="Rohan Mehta", email="rohan@example.com", age=19),
+            Student(name="Kavya Nair", email="kavya@example.com", age=21),
+            Student(name="Farhan Sheikh", email="farhan@example.com", age=20),
+            Student(name="Priya Iyer", email="priya@example.com", age=22),
+            Student(name="Devansh Gupta", email="devansh@example.com", age=23),
+            Student(name="Meera Joshi", email="meera@example.com", age=18),
+            Student(name="Sameer Khan", email="sameer@example.com", age=24),
         ]
-        db.add_all(sample_students)
+        db.add_all(exact_students)
         db.commit()
-        for s in sample_students:
+        for s in exact_students:
             db.refresh(s)
-        print(f"[SEED] Created {len(sample_students)} students.")
+        print(f"[SEED] Created {len(exact_students)} students.")
 
     if db.query(Course).count() == 0:
         print("[SEED] Seeding initial Course records...")
-        # Get first few students for foreign key mapping
         students = db.query(Student).all()
         student_map = {s.name: s.id for s in students}
 
-        sample_courses = [
+        exact_courses = [
             Course(
-                code="CS101",
-                title="Data Structures & Algorithms",
-                description="Comprehensive study of arrays, linked lists, sorting, and search algorithms.",
-                student_id=student_map.get("Rohan")
+                course_name="Data Structures & Algorithms",
+                credits=4,
+                student_id=student_map.get("Rohan Mehta")
             ),
             Course(
-                code="CS102",
-                title="Web Application Development",
-                description="RESTful API design with FastAPI, SQLite ORM, and HTML5/CSS3/JS frontend.",
-                student_id=student_map.get("Farhan")
+                course_name="Web Application Development",
+                credits=3,
+                student_id=student_map.get("Farhan Sheikh")
             ),
             Course(
-                code="CS103",
-                title="Artificial Intelligence & NLP",
-                description="Natural Language Processing fundamentals, TF-IDF vectorization, and Cosine Similarity.",
-                student_id=student_map.get("Priya")
+                course_name="Database Systems",
+                credits=4,
+                student_id=student_map.get("Priya Iyer")
             ),
             Course(
-                code="CS104",
-                title="Database Systems",
-                description="Relational database schema design, transactions, indexing, and SQLAlchemy ORM.",
-                student_id=student_map.get("Aanya")
+                course_name="Artificial Intelligence",
+                credits=3,
+                student_id=student_map.get("Aditi Rao")
             ),
             Course(
-                code="CS105",
-                title="Software Engineering Principles",
-                description="Clean architecture, design patterns, automated testing, and CI/CD pipelines.",
-                student_id=student_map.get("Dev")
+                course_name="Operating Systems",
+                credits=4,
+                student_id=student_map.get("Kavya Nair")
             ),
         ]
-        db.add_all(sample_courses)
+        db.add_all(exact_courses)
         db.commit()
-        print(f"[SEED] Created {len(sample_courses)} courses.")
+        print(f"[SEED] Created {len(exact_courses)} courses.")
 
 
 if __name__ == "__main__":

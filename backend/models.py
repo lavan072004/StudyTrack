@@ -28,9 +28,8 @@ class Course(Base):
     __tablename__ = "courses"
 
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
-    code = Column(String, nullable=False, index=True)
-    title = Column(String, nullable=False, index=True)
-    description = Column(String, nullable=True)
+    course_name = Column(String, nullable=False, index=True)
+    credits = Column(Integer, nullable=False)
     student_id = Column(Integer, ForeignKey("students.id", ondelete="CASCADE"), nullable=True, index=True)
 
     # Relationship to Student model
@@ -39,8 +38,7 @@ class Course(Base):
     def to_dict(self):
         return {
             "id": self.id,
-            "code": self.code,
-            "title": self.title,
-            "description": self.description or "",
+            "course_name": self.course_name,
+            "credits": self.credits,
             "student_id": self.student_id
         }

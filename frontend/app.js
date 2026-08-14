@@ -1,6 +1,7 @@
 /**
  * StudyTrack Frontend Application Engine
  * Pure Vanilla JavaScript (No React / Frameworks)
+ * Compliant with Assessment Event Delegation & DOM Creation Rules
  */
 
 const API_BASE = window.location.origin;
@@ -9,32 +10,48 @@ const API_BASE = window.location.origin;
 const state = {
     students: [],
     courses: [],
-    currentTab: 'dashboard',
-    notes: []
+    currentTab: 'dashboard'
 };
 
-// DOM Elements Initialization
+// DOM Initialization
 document.addEventListener('DOMContentLoaded', () => {
     initNavigation();
     initStudentForm();
     initCourseForm();
     initControls();
+    initRosterEventDelegation(); // REQUIREMENT 22: Event delegation on #roster-list
     initAlgorithmsTab();
-    initAIHelperTab();
-    initAISummarizerTab();
-    initSemanticSearchTab();
+    initAIHelperPanel();
     
     // Initial Load
     fetchStudents();
     fetchCourses();
-    fetchNotesDataset();
 });
 
 /* ==========================================================================
-   Toast Notification System
+   Requirement 23: Visible Error Banner & Toast System
    ========================================================================== */
+function showError(message) {
+    const banner = document.getElementById('error-banner');
+    if (banner) {
+        banner.textContent = `Error: ${message}`;
+        banner.style.display = 'block';
+        setTimeout(() => {
+            banner.style.display = 'none';
+        }, 6000);
+    }
+    showToast(message, 'error');
+}
+
+function clearError() {
+    const banner = document.getElementById('error-banner');
+    if (banner) banner.style.display = 'none';
+}
+
 function showToast(message, type = 'success') {
     const container = document.getElementById('toast-container');
+    if (!container) return;
+
     const toast = document.createElement('div');
     toast.className = `toast ${type}`;
     
@@ -67,12 +84,10 @@ function initNavigation() {
     const pageSubtitle = document.getElementById('page-subtitle');
 
     const meta = {
-        'dashboard': { title: 'Student Management', subtitle: 'Manage student profiles, edit ages, and view records' },
+        'dashboard': { title: 'Student Roster Management', subtitle: 'Manage student profiles, edit ages, view roster, and filter records' },
         'courses': { title: 'Course Offerings', subtitle: 'Register, assign, and manage academic courses' },
         'algorithms': { title: 'Algorithms & Report', subtitle: 'Custom Insertion Sort, Binary Search, and API Report endpoint' },
-        'ai-helper': { title: 'AI Study Assistant', subtitle: 'Interactive companion for revision tips, algorithm insights & course guidance' },
-        'ai-summarizer': { title: 'AI Text Summarizer', subtitle: 'Extract topics, key points, and difficulty metrics into structured JSON' },
-        'semantic-search': { title: 'Semantic Search Engine', subtitle: 'Cosine Similarity vector search across computer science note dataset' }
+        'ai-helper': { title: 'AI Helper & Study Notes Panel', subtitle: 'Note summarizer & Cosine Similarity vector search across 5 CS notes' }
     };
 
     navItems.forEach(item => {
@@ -96,54 +111,45 @@ function initNavigation() {
 }
 
 /* ==========================================================================
-   Part 1: Core Student Management (CRUD)
+   Part 1: Student CRUD Operations
    ========================================================================== */
-async function fetchStudents() {
-    const grid = document.getElementById('students-grid');
-    grid.innerHTML = `
+async function fetchStudents(minAge = null) {
+    const rosterList = document.getElementById('roster-list');
+    if (!rosterList) return;
+
+    rosterList.innerHTML = `
         <div class="loading-state">
             <div class="spinner"></div>
-            <p>Loading student profiles from database...</p>
+            <p>Loading student roster...</p>
         </div>`;
 
     try {
-        const response = await fetch(`${API_BASE}/api/students`);
-        if (!response.ok) throw new Error('Failed to fetch student records');
-        
+        let url = `${API_BASE}/students/`;
+        if (minAge !== null && minAge !== undefined && minAge !== '') {
+            url += `?min_age=${encodeURIComponent(minAge)}`;
+        }
+
+        const response = await fetch(url);
+        if (!response.ok) {
+            const errData = await response.json().catch(() => ({}));
+            throw new Error(errData.detail || 'Failed to fetch student records');
+        }
+
         state.students = await response.json();
         renderStudentsGrid(state.students);
         updateHeaderStats();
         populateStudentDropdown(state.students);
-
-        const filterBadge = document.getElementById('active-filter-badge');
-        const resetBtn = document.getElementById('btn-reset-search');
-        if (filterBadge) filterBadge.style.display = 'none';
-        if (resetBtn) resetBtn.style.display = 'none';
+        clearError();
     } catch (err) {
-        grid.innerHTML = `<div class="loading-state"><p style="color: var(--danger)">Error: ${escapeHtml(err.message)}</p></div>`;
-        showToast(err.message, 'error');
+        showError(err.message);
     }
-}
-
-function populateStudentDropdown(studentsList) {
-    const select = document.getElementById('course-student-id');
-    if (!select) return;
-    select.innerHTML = '<option value="">-- Optional: Select Student --</option>';
-    studentsList.forEach(student => {
-        const opt = document.createElement('option');
-        opt.value = student.id;
-        opt.textContent = `${student.name} (ID #${student.id})`;
-        select.appendChild(opt);
-    });
 }
 
 function updateHeaderStats() {
     const totalStudentsEl = document.getElementById('stat-total-students');
-    const totalCoursesEl = document.getElementById('stat-total-courses');
     const avgAgeEl = document.getElementById('stat-avg-age');
 
     if (totalStudentsEl) totalStudentsEl.textContent = state.students.length;
-    if (totalCoursesEl) totalCoursesEl.textContent = state.courses.length;
 
     if (!state.students || state.students.length === 0) {
         if (avgAgeEl) avgAgeEl.textContent = '0';
@@ -155,55 +161,59 @@ function updateHeaderStats() {
     if (avgAgeEl) avgAgeEl.textContent = avg;
 }
 
+function createStudentCardElement(student) {
+    const card = document.createElement('div');
+    card.className = 'student-card';
+    card.setAttribute('data-id', student.id);
+
+    const initial = student.name.charAt(0).toUpperCase();
+
+    card.innerHTML = `
+        <div class="card-top">
+            <div class="avatar-circle">${escapeHtml(initial)}</div>
+            <span class="badge badge-info">ID #${student.id}</span>
+        </div>
+        <div class="card-info">
+            <div class="student-name-text">${escapeHtml(student.name)}</div>
+            <div class="student-email-text">${escapeHtml(student.email)}</div>
+        </div>
+        <div class="age-editor-row">
+            <span class="age-label">Current Age:</span>
+            <input type="number" class="age-input-field" value="${student.age}" min="1" max="120" id="age-input-${student.id}">
+        </div>
+        <div class="card-bottom-actions">
+            <button class="btn btn-save btn-sm btn-save-age" data-id="${student.id}">
+                Save Age
+            </button>
+            <button class="btn btn-danger btn-sm btn-delete-student" data-id="${student.id}">
+                Delete
+            </button>
+        </div>
+    `;
+    return card;
+}
+
 function renderStudentsGrid(studentsList) {
-    const grid = document.getElementById('students-grid');
-    grid.innerHTML = '';
+    const rosterList = document.getElementById('roster-list');
+    if (!rosterList) return;
+    rosterList.innerHTML = '';
 
     if (!studentsList || studentsList.length === 0) {
-        grid.innerHTML = `
+        rosterList.innerHTML = `
             <div class="loading-state">
-                <p>No student records found. Add a new student above!</p>
+                <p>No student records found in roster.</p>
             </div>`;
         return;
     }
 
     studentsList.forEach(student => {
-        const card = document.createElement('div');
-        card.className = 'student-card';
-        card.setAttribute('data-id', student.id);
-
-        const initial = student.name.charAt(0).toUpperCase();
-
-        card.innerHTML = `
-            <div class="card-top">
-                <div class="avatar-circle">${escapeHtml(initial)}</div>
-                <span class="badge badge-info">ID #${student.id}</span>
-            </div>
-            <div class="card-info">
-                <div class="student-name-text">${escapeHtml(student.name)}</div>
-                <div class="student-email-text">${escapeHtml(student.email)}</div>
-            </div>
-            <div class="age-editor-row">
-                <span class="age-label">Current Age:</span>
-                <input type="number" class="age-input-field" value="${student.age}" min="1" max="120" id="age-input-${student.id}">
-            </div>
-            <div class="card-bottom-actions">
-                <button class="btn btn-save btn-sm" onclick="handleSaveAge(${student.id})">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                    Save Age
-                </button>
-                <button class="btn btn-danger btn-sm" onclick="handleDeleteStudent(${student.id})">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
-                    Delete
-                </button>
-            </div>
-        `;
-        grid.appendChild(card);
+        const card = createStudentCardElement(student);
+        rosterList.appendChild(card);
     });
 }
 
 function initStudentForm() {
-    const form = document.getElementById('add-student-form');
+    const form = document.getElementById('student-form');
     if (!form) return;
 
     form.addEventListener('submit', async (e) => {
@@ -221,120 +231,176 @@ function initStudentForm() {
         };
 
         btn.disabled = true;
-        btn.innerHTML = `<div class="spinner" style="width:16px;height:16px;border-width:2px;"></div> Saving...`;
 
         try {
-            const response = await fetch(`${API_BASE}/api/students`, {
+            const response = await fetch(`${API_BASE}/students/`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
             });
 
             if (!response.ok) {
-                const errData = await response.json();
-                throw new Error(errData.detail || 'Failed to add student');
+                const errData = await response.json().catch(() => ({}));
+                const detailMsg = Array.isArray(errData.detail) ? errData.detail.map(d => d.msg).join(', ') : (errData.detail || 'Failed to add student');
+                throw new Error(detailMsg);
             }
 
             const newStudent = await response.json();
-            showToast(`Student ${newStudent.name} added successfully!`, 'success');
+            
+            // REQUIREMENT 24: Do NOT reload page or rebuild entire roster.
+            // Use document.createElement() and append to #roster-list!
+            const rosterList = document.getElementById('roster-list');
+            const newCard = createStudentCardElement(newStudent);
+            
+            // If placeholder loading state exists, clear it
+            if (rosterList.querySelector('.loading-state')) {
+                rosterList.innerHTML = '';
+            }
+            rosterList.appendChild(newCard);
+
+            state.students.push(newStudent);
+            updateHeaderStats();
+            populateStudentDropdown(state.students);
+
+            showToast(`Student ${newStudent.name} registered successfully!`, 'success');
             form.reset();
-            fetchStudents();
+            clearError();
         } catch (err) {
-            showToast(err.message, 'error');
+            showError(err.message);
         } finally {
             btn.disabled = false;
-            btn.innerHTML = `
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-                Add Student`;
         }
     });
 }
 
-async function handleSaveAge(studentId) {
-    const ageInput = document.getElementById(`age-input-${studentId}`);
-    const newAge = parseInt(ageInput.value, 10);
+/* ==========================================================================
+   REQUIREMENT 22: Event Delegation on #roster-list
+   ========================================================================== */
+function initRosterEventDelegation() {
+    const rosterList = document.getElementById('roster-list');
+    if (!rosterList) return;
 
-    if (isNaN(newAge) || newAge < 1 || newAge > 120) {
-        showToast('Please enter a valid age between 1 and 120.', 'error');
+    rosterList.addEventListener('click', async (e) => {
+        // Save Age Button Click
+        const saveBtn = e.target.closest('.btn-save-age');
+        if (saveBtn) {
+            const studentId = parseInt(saveBtn.getAttribute('data-id'), 10);
+            await handlePatchAge(studentId);
+            return;
+        }
+
+        // Delete Student Button Click
+        const deleteBtn = e.target.closest('.btn-delete-student');
+        if (deleteBtn) {
+            const studentId = parseInt(deleteBtn.getAttribute('data-id'), 10);
+            await handleDeleteStudent(studentId);
+            return;
+        }
+    });
+}
+
+/* ==========================================================================
+   REQUIREMENT 25: Edit Age via PATCH /students/{student_id}
+   ========================================================================== */
+async function handlePatchAge(studentId) {
+    const ageInput = document.getElementById(`age-input-${studentId}`);
+    if (!ageInput) return;
+
+    const newAge = parseInt(ageInput.value, 10);
+    if (isNaN(newAge) || newAge <= 0) {
+        showError('Please enter a valid age greater than 0.');
         return;
     }
 
     try {
-        const response = await fetch(`${API_BASE}/api/students/${studentId}`, {
-            method: 'PUT',
+        const response = await fetch(`${API_BASE}/students/${studentId}`, {
+            method: 'PATCH', // REQUIREMENT 25: MUST use PATCH, NOT PUT
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ age: newAge })
         });
 
         if (!response.ok) {
-            const errData = await response.json();
+            const errData = await response.json().catch(() => ({}));
             throw new Error(errData.detail || 'Failed to update student age');
         }
 
         const updatedStudent = await response.json();
-        showToast(`Updated age for ${updatedStudent.name} to ${updatedStudent.age}!`, 'success');
-        fetchStudents();
+        showToast(`Age for ${updatedStudent.name} updated to ${updatedStudent.age}!`, 'success');
+        
+        // Update local state item
+        const idx = state.students.findIndex(s => s.id === studentId);
+        if (idx !== -1) state.students[idx].age = updatedStudent.age;
+        updateHeaderStats();
+        clearError();
     } catch (err) {
-        showToast(err.message, 'error');
+        showError(err.message);
     }
 }
 
 async function handleDeleteStudent(studentId) {
-    if (!confirm('Are you sure you want to delete this student profile?')) return;
+    if (!confirm(`Are you sure you want to delete Student ID #${studentId}?`)) return;
 
     try {
-        const response = await fetch(`${API_BASE}/api/students/${studentId}`, {
+        const response = await fetch(`${API_BASE}/students/${studentId}`, {
             method: 'DELETE'
         });
 
         if (!response.ok) {
-            const errData = await response.json();
+            const errData = await response.json().catch(() => ({}));
             throw new Error(errData.detail || 'Failed to delete student');
         }
 
+        // Remove card element from DOM without page reload
+        const card = document.querySelector(`.student-card[data-id="${studentId}"]`);
+        if (card) card.remove();
+
+        state.students = state.students.filter(s => s.id !== studentId);
+        updateHeaderStats();
+        populateStudentDropdown(state.students);
         showToast(`Student ID #${studentId} deleted successfully.`, 'info');
-        fetchStudents();
+        clearError();
     } catch (err) {
-        showToast(err.message, 'error');
+        showError(err.message);
     }
 }
 
 /* ==========================================================================
-   Part 1 (B): Core Course Management (CRUD)
+   Part 1 (B): Course Management (CRUD)
    ========================================================================== */
 async function fetchCourses() {
-    const grid = document.getElementById('courses-grid');
-    if (!grid) return;
-
-    grid.innerHTML = `
-        <div class="loading-state">
-            <div class="spinner"></div>
-            <p>Loading course offerings from database...</p>
-        </div>`;
+    const list = document.getElementById('courses-list');
+    if (!list) return;
 
     try {
-        const response = await fetch(`${API_BASE}/api/courses`);
+        const response = await fetch(`${API_BASE}/courses/`);
         if (!response.ok) throw new Error('Failed to fetch course records');
 
         state.courses = await response.json();
         renderCoursesGrid(state.courses);
-        updateHeaderStats();
     } catch (err) {
-        grid.innerHTML = `<div class="loading-state"><p style="color: var(--danger)">Error: ${escapeHtml(err.message)}</p></div>`;
-        showToast(err.message, 'error');
+        showError(err.message);
     }
 }
 
+function populateStudentDropdown(studentsList) {
+    const select = document.getElementById('course-student-id');
+    if (!select) return;
+    select.innerHTML = '<option value="">-- Optional: Select Student --</option>';
+    studentsList.forEach(student => {
+        const opt = document.createElement('option');
+        opt.value = student.id;
+        opt.textContent = `${student.name} (ID #${student.id})`;
+        select.appendChild(opt);
+    });
+}
+
 function renderCoursesGrid(coursesList) {
-    const grid = document.getElementById('courses-grid');
-    if (!grid) return;
-    grid.innerHTML = '';
+    const list = document.getElementById('courses-list');
+    if (!list) return;
+    list.innerHTML = '';
 
     if (!coursesList || coursesList.length === 0) {
-        grid.innerHTML = `
-            <div class="loading-state">
-                <p>No course offerings found. Create a new course above!</p>
-            </div>`;
+        list.innerHTML = `<div class="loading-state"><p>No course offerings registered.</p></div>`;
         return;
     }
 
@@ -348,12 +414,11 @@ function renderCoursesGrid(coursesList) {
 
         card.innerHTML = `
             <div class="card-top">
-                <div class="course-code-badge">${escapeHtml(course.code)}</div>
+                <div class="course-code-badge">${course.credits} Credits</div>
                 <span class="badge badge-purple">Course ID #${course.id}</span>
             </div>
             <div class="card-info">
-                <div class="course-title-text">${escapeHtml(course.title)}</div>
-                <div class="course-desc-text">${escapeHtml(course.description || 'No description provided.')}</div>
+                <div class="course-title-text">${escapeHtml(course.course_name)}</div>
             </div>
             <div class="age-editor-row">
                 <span class="age-label">Enrolled Student:</span>
@@ -361,163 +426,164 @@ function renderCoursesGrid(coursesList) {
             </div>
             <div class="card-bottom-actions">
                 <button class="btn btn-danger btn-sm" onclick="handleDeleteCourse(${course.id})">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
                     Delete Course
                 </button>
             </div>
         `;
-        grid.appendChild(card);
+        list.appendChild(card);
     });
 }
 
 function initCourseForm() {
-    const form = document.getElementById('add-course-form');
-    const refreshBtn = document.getElementById('btn-refresh-courses');
-
-    if (refreshBtn) refreshBtn.addEventListener('click', fetchCourses);
-
+    const form = document.getElementById('course-form');
     if (!form) return;
 
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
 
-        const codeInput = document.getElementById('course-code');
-        const titleInput = document.getElementById('course-title');
-        const descInput = document.getElementById('course-description');
+        const nameInput = document.getElementById('course-name');
+        const creditsInput = document.getElementById('course-credits');
         const studentSelect = document.getElementById('course-student-id');
         const btn = document.getElementById('btn-add-course');
 
         const studentIdVal = studentSelect.value ? parseInt(studentSelect.value, 10) : null;
+        const creditsVal = parseInt(creditsInput.value, 10);
+
+        if (creditsVal < 1 || creditsVal > 6) {
+            showError('Course credits must be between 1 and 6 inclusive.');
+            return;
+        }
 
         const payload = {
-            code: codeInput.value.trim(),
-            title: titleInput.value.trim(),
-            description: descInput.value.trim() || null,
+            course_name: nameInput.value.trim(),
+            credits: creditsVal,
             student_id: studentIdVal
         };
 
         btn.disabled = true;
-        btn.innerHTML = `<div class="spinner" style="width:16px;height:16px;border-width:2px;"></div> Creating...`;
 
         try {
-            const response = await fetch(`${API_BASE}/api/courses`, {
+            const response = await fetch(`${API_BASE}/courses/`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
             });
 
             if (!response.ok) {
-                const errData = await response.json();
+                const errData = await response.json().catch(() => ({}));
                 throw new Error(errData.detail || 'Failed to add course');
             }
 
             const newCourse = await response.json();
-            showToast(`Course ${newCourse.code} - ${newCourse.title} created successfully!`, 'success');
+            showToast(`Course "${newCourse.course_name}" created successfully!`, 'success');
             form.reset();
             fetchCourses();
+            clearError();
         } catch (err) {
-            showToast(err.message, 'error');
+            showError(err.message);
         } finally {
             btn.disabled = false;
-            btn.innerHTML = `
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-                Add Course`;
         }
     });
 }
 
 async function handleDeleteCourse(courseId) {
-    if (!confirm('Are you sure you want to delete this course offering?')) return;
+    if (!confirm(`Are you sure you want to delete Course ID #${courseId}?`)) return;
 
     try {
-        const response = await fetch(`${API_BASE}/api/courses/${courseId}`, {
+        const response = await fetch(`${API_BASE}/courses/${courseId}`, {
             method: 'DELETE'
         });
 
-        if (!response.ok) {
-            const errData = await response.json();
-            throw new Error(errData.detail || 'Failed to delete course');
-        }
+        if (!response.ok) throw new Error('Failed to delete course');
 
-        showToast(`Course ID #${courseId} deleted successfully.`, 'info');
+        showToast(`Course ID #${courseId} deleted.`, 'info');
         fetchCourses();
     } catch (err) {
-        showToast(err.message, 'error');
+        showError(err.message);
     }
 }
 
+/* ==========================================================================
+   Controls, Filters, Sorting & Binary Search
+   ========================================================================== */
 function initControls() {
-    const refreshBtn = document.getElementById('btn-refresh-students');
-    if (refreshBtn) refreshBtn.addEventListener('click', fetchStudents);
-
-    const sortBtn = document.getElementById('btn-insertion-sort');
-    if (sortBtn) {
-        sortBtn.addEventListener('click', async () => {
+    // Sort by Age Button
+    const btnSortAge = document.getElementById('btn-sort-age');
+    if (btnSortAge) {
+        btnSortAge.addEventListener('click', async () => {
             try {
-                const response = await fetch(`${API_BASE}/api/students/sorted-by-age`);
-                if (!response.ok) throw new Error('Failed to run insertion sort');
-
-                const sortedStudents = await response.json();
-                renderStudentsGrid(sortedStudents);
-                const filterBadge = document.getElementById('active-filter-badge');
-                const resetBtn = document.getElementById('btn-reset-search');
-
-                if (filterBadge) {
-                    filterBadge.style.display = 'inline-block';
-                    filterBadge.textContent = 'Sorted by Age (Insertion Sort)';
-                }
-                if (resetBtn) resetBtn.style.display = 'inline-block';
-
-                showToast('Students sorted by Age using custom Insertion Sort!', 'success');
+                const response = await fetch(`${API_BASE}/students/sorted?by=age`);
+                if (!response.ok) throw new Error('Failed to sort roster by age');
+                const sorted = await response.json();
+                renderStudentsGrid(sorted);
+                showToast('Roster sorted by Age using custom Insertion Sort!', 'success');
+                clearError();
             } catch (err) {
-                showToast(err.message, 'error');
+                showError(err.message);
             }
         });
     }
 
-    const searchInput = document.getElementById('binary-search-input');
-    const searchBtn = document.getElementById('btn-binary-search');
-    const resetBtn = document.getElementById('btn-reset-search');
+    // Sort by Name Button
+    const btnSortName = document.getElementById('btn-sort-name');
+    if (btnSortName) {
+        btnSortName.addEventListener('click', async () => {
+            try {
+                const response = await fetch(`${API_BASE}/students/sorted?by=name`);
+                if (!response.ok) throw new Error('Failed to sort roster by name');
+                const sorted = await response.json();
+                renderStudentsGrid(sorted);
+                showToast('Roster sorted by Name using custom Insertion Sort!', 'success');
+                clearError();
+            } catch (err) {
+                showError(err.message);
+            }
+        });
+    }
 
-    if (searchBtn && searchInput) {
-        const handleBinarySearch = async () => {
+    // Binary Search by Name Button
+    const btnBinarySearch = document.getElementById('btn-binary-search');
+    const searchInput = document.getElementById('binary-search-input');
+    if (btnBinarySearch && searchInput) {
+        btnBinarySearch.addEventListener('click', async () => {
             const query = searchInput.value.trim();
             if (!query) {
-                showToast('Please enter a name to search using Binary Search.', 'info');
+                showError('Please enter a name to search using Binary Search.');
                 return;
             }
 
             try {
-                const response = await fetch(`${API_BASE}/api/students/search?name=${encodeURIComponent(query)}`);
+                const response = await fetch(`${API_BASE}/students/search?name=${encodeURIComponent(query)}`);
                 if (!response.ok) {
-                    const errData = await response.json();
-                    throw new Error(errData.detail || 'No student found');
+                    const errData = await response.json().catch(() => ({}));
+                    throw new Error(errData.detail || `No student found matching '${query}'`);
                 }
-
                 const matches = await response.json();
                 renderStudentsGrid(matches);
-                const filterBadge = document.getElementById('active-filter-badge');
-
-                if (filterBadge) {
-                    filterBadge.style.display = 'inline-block';
-                    filterBadge.textContent = `Binary Search Match: "${query}"`;
-                }
-                if (resetBtn) resetBtn.style.display = 'inline-block';
-
                 showToast(`Binary Search found ${matches.length} matching student(s)!`, 'success');
+                clearError();
             } catch (err) {
-                showToast(err.message, 'error');
+                showError(err.message);
             }
-        };
-
-        searchBtn.addEventListener('click', handleBinarySearch);
-        searchInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') handleBinarySearch();
         });
     }
 
-    if (resetBtn) {
-        resetBtn.addEventListener('click', () => {
+    // Min Age Filter Button
+    const btnApplyMinAge = document.getElementById('btn-apply-min-age');
+    const minAgeInput = document.getElementById('min-age-filter-input');
+    if (btnApplyMinAge && minAgeInput) {
+        btnApplyMinAge.addEventListener('click', () => {
+            const minAgeVal = minAgeInput.value ? parseInt(minAgeInput.value, 10) : null;
+            fetchStudents(minAgeVal);
+        });
+    }
+
+    // Reset Roster Button
+    const btnReset = document.getElementById('btn-reset-roster');
+    if (btnReset) {
+        btnReset.addEventListener('click', () => {
+            if (minAgeInput) minAgeInput.value = '';
             if (searchInput) searchInput.value = '';
             fetchStudents();
         });
@@ -525,249 +591,119 @@ function initControls() {
 }
 
 /* ==========================================================================
-   Part 2: Algorithms & Report
+   Report Endpoint Handler
    ========================================================================== */
 function initAlgorithmsTab() {
-    const reportBtn = document.getElementById('btn-generate-report');
-    const reportBox = document.getElementById('report-output');
+    const btnReport = document.getElementById('btn-generate-report');
+    const minAgeInput = document.getElementById('report-min-age-input');
+    const reportOutput = document.getElementById('report-output');
+    const countOutput = document.getElementById('report-count-output');
 
-    if (reportBtn && reportBox) {
-        reportBtn.addEventListener('click', async () => {
-            reportBox.innerHTML = '<div class="spinner" style="margin: 20px auto;"></div>';
-
+    if (btnReport) {
+        btnReport.addEventListener('click', async () => {
+            const minAge = minAgeInput ? parseInt(minAgeInput.value, 10) : 21;
             try {
-                const response = await fetch(`${API_BASE}/api/report`);
-                if (!response.ok) throw new Error('Failed to generate report');
-
+                const response = await fetch(`${API_BASE}/students/report?min_age=${minAge}`);
+                if (!response.ok) throw new Error('Failed to generate student report');
                 const data = await response.json();
-                reportBox.textContent = data.raw_text || data.formatted_report.join('\n');
-                showToast('Report endpoint successfully generated!', 'success');
+                
+                if (countOutput) countOutput.textContent = data.count_meeting_min_age;
+                if (reportOutput) reportOutput.textContent = data.raw_text || data.report.join('\n');
+                showToast(`Report generated! (${data.count_meeting_min_age} students meeting min age ${minAge})`, 'success');
+                clearError();
             } catch (err) {
-                reportBox.textContent = `Error: ${err.message}`;
-                showToast(err.message, 'error');
+                showError(err.message);
             }
         });
     }
 }
 
 /* ==========================================================================
-   Part 3: AI Assistant / Helper
+   REQUIREMENT 26: AI Helper Panel Engine
    ========================================================================== */
-function initAIHelperTab() {
-    const inputField = document.getElementById('ai-helper-input');
-    const runBtn = document.getElementById('btn-run-ai-helper');
-    const resultsContainer = document.getElementById('ai-helper-results');
-    const chips = document.querySelectorAll('.assistant-chip');
+function initAIHelperPanel() {
+    // 1. Note Summarizer (POST /assistant/summarize)
+    const btnSummarize = document.getElementById('btn-summarize');
+    const notesInput = document.getElementById('ai-notes-input');
+    const resultsCard = document.getElementById('summary-results-card');
 
-    if (!runBtn || !inputField) return;
+    if (btnSummarize && notesInput) {
+        btnSummarize.addEventListener('click', async () => {
+            const text = notesInput.value;
+            btnSummarize.disabled = true;
 
-    const handleAskHelper = async (promptText) => {
-        const prompt = promptText || inputField.value.trim();
-        if (!prompt) {
-            showToast('Please enter a query for the AI Assistant.', 'info');
-            return;
-        }
+            try {
+                const response = await fetch(`${API_BASE}/assistant/summarize`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ text: text })
+                });
 
-        runBtn.disabled = true;
-        runBtn.innerHTML = `<div class="spinner" style="width:16px;height:16px;border-width:2px;"></div> Thinking...`;
+                if (!response.ok) throw new Error('Note summarizer failed');
+                const data = await response.json();
 
-        try {
-            const response = await fetch(`${API_BASE}/api/ai/helper`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ prompt, context: 'StudyTrack Full Stack Portal' })
-            });
+                document.getElementById('summary-topic').textContent = data.topic;
+                document.getElementById('summary-difficulty').textContent = data.difficulty;
+                
+                const pointsList = document.getElementById('summary-key-points');
+                if (pointsList) {
+                    pointsList.innerHTML = (data.key_points || []).map(pt => `<li>${escapeHtml(pt)}</li>`).join('');
+                }
 
-            if (!response.ok) throw new Error('AI Assistant response error');
-
-            const data = await response.json();
-
-            document.getElementById('ai-helper-response-text').textContent = data.response;
-            document.getElementById('ai-helper-timestamp').textContent = data.timestamp;
-
-            const list = document.getElementById('ai-helper-suggestions-list');
-            list.innerHTML = data.suggestions.map(s => `<li>${escapeHtml(s)}</li>`).join('');
-
-            document.getElementById('ai-helper-raw-json').textContent = JSON.stringify(data, null, 2);
-
-            resultsContainer.style.display = 'block';
-            showToast('AI Assistant generated response & study recommendations!', 'success');
-        } catch (err) {
-            showToast(err.message, 'error');
-        } finally {
-            runBtn.disabled = false;
-            runBtn.innerHTML = `
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
-                Ask Assistant`;
-        }
-    };
-
-    runBtn.addEventListener('click', () => handleAskHelper());
-    inputField.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') handleAskHelper();
-    });
-
-    chips.forEach(chip => {
-        chip.addEventListener('click', () => {
-            const p = chip.getAttribute('data-prompt');
-            inputField.value = p;
-            handleAskHelper(p);
+                if (resultsCard) resultsCard.style.display = 'block';
+                showToast('Note summarized successfully!', 'success');
+                clearError();
+            } catch (err) {
+                showError(err.message);
+            } finally {
+                btnSummarize.disabled = false;
+            }
         });
-    });
-}
+    }
 
-function initAISummarizerTab() {
-    const inputArea = document.getElementById('summarizer-input');
-    const runBtn = document.getElementById('btn-run-summary');
-    const sampleBtn = document.getElementById('btn-sample-summary');
-    const resultsContainer = document.getElementById('summary-results');
+    // 2. Semantic Search Notes (GET /assistant/search?query=)
+    const btnSearchNotes = document.getElementById('btn-search-notes');
+    const queryInput = document.getElementById('ai-search-query');
+    const resultsList = document.getElementById('search-results-list');
 
-    if (!runBtn || !inputArea) return;
+    if (btnSearchNotes && queryInput) {
+        btnSearchNotes.addEventListener('click', async () => {
+            const query = queryInput.value.trim();
+            btnSearchNotes.disabled = true;
 
-    sampleBtn.addEventListener('click', () => {
-        inputArea.value = `Binary search is an efficient divide and conquer algorithm for finding an item from a sorted list of items. It works by repeatedly dividing in half the portion of the list that could contain the item until you have narrowed down the possible locations to just one. The time complexity of binary search is O(log n), making it exponentially faster than linear search for large datasets.`;
-    });
+            try {
+                const response = await fetch(`${API_BASE}/assistant/search?query=${encodeURIComponent(query)}`);
+                if (!response.ok) throw new Error('Note semantic search failed');
+                const notes = await response.json();
 
-    runBtn.addEventListener('click', async () => {
-        const text = inputArea.value.trim();
-        if (text.length < 5) {
-            showToast('Please enter a longer text to summarize.', 'info');
-            return;
-        }
+                if (resultsList) {
+                    resultsList.innerHTML = '';
+                    notes.forEach(note => {
+                        const item = document.createElement('div');
+                        item.className = 'note-item';
+                        item.innerHTML = `
+                            <div class="note-item-header">
+                                <span>Note #${note.id}: ${escapeHtml(note.title)}</span>
+                                <span class="score-badge">Cosine Score: ${note.score}</span>
+                            </div>
+                            <p class="card-desc" style="margin-bottom:0;">${escapeHtml(note.content)}</p>
+                        `;
+                        resultsList.appendChild(item);
+                    });
+                }
 
-        runBtn.disabled = true;
-        runBtn.innerHTML = `<div class="spinner" style="width:16px;height:16px;border-width:2px;"></div> Summarizing...`;
-
-        try {
-            const response = await fetch(`${API_BASE}/api/ai/summarize`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ text })
-            });
-
-            if (!response.ok) throw new Error('Failed to generate text summary');
-
-            const data = await response.json();
-
-            document.getElementById('summary-topic').textContent = data.topic;
-            
-            const diffBadge = document.getElementById('summary-difficulty-badge');
-            diffBadge.textContent = data.difficulty;
-            diffBadge.className = `badge ${data.difficulty === 'Easy' ? 'badge-green' : data.difficulty === 'Medium' ? 'badge-purple' : 'badge-pink'}`;
-
-            const list = document.getElementById('summary-key-points-list');
-            list.innerHTML = data.key_points.map(pt => `<li>${escapeHtml(pt)}</li>`).join('');
-
-            document.getElementById('summary-raw-json').textContent = JSON.stringify(data, null, 2);
-
-            resultsContainer.style.display = 'block';
-            showToast('Text summarized successfully!', 'success');
-        } catch (err) {
-            showToast(err.message, 'error');
-        } finally {
-            runBtn.disabled = false;
-            runBtn.innerHTML = `
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
-                Summarize Text`;
-        }
-    });
-}
-
-async function fetchNotesDataset() {
-    try {
-        const response = await fetch(`${API_BASE}/api/ai/notes`);
-        if (response.ok) {
-            state.notes = await response.json();
-            renderSemanticNotes(state.notes.map(n => ({ ...n, similarity_score: 0.0 })));
-        }
-    } catch (err) {
-        console.error('Notes dataset fetch error:', err);
+                showToast('Semantic Search calculated Cosine Similarity scores!', 'success');
+                clearError();
+            } catch (err) {
+                showError(err.message);
+            } finally {
+                btnSearchNotes.disabled = false;
+            }
+        });
     }
 }
 
-function initSemanticSearchTab() {
-    const searchInput = document.getElementById('semantic-search-input');
-    const searchBtn = document.getElementById('btn-run-semantic-search');
-    const chips = document.querySelectorAll('.chip-btn:not(.assistant-chip)');
-
-    if (!searchBtn || !searchInput) return;
-
-    const handleSearch = async (queryText) => {
-        const query = queryText || searchInput.value.trim();
-        if (!query) {
-            showToast('Please enter a search query for semantic analysis.', 'info');
-            return;
-        }
-
-        searchBtn.disabled = true;
-        searchBtn.innerHTML = `<div class="spinner" style="width:16px;height:16px;border-width:2px;"></div> Searching...`;
-
-        try {
-            const response = await fetch(`${API_BASE}/api/ai/semantic-search`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ query })
-            });
-
-            if (!response.ok) throw new Error('Semantic search failed');
-
-            const results = await response.json();
-            renderSemanticNotes(results);
-            showToast('Cosine Similarity calculated across notes dataset!', 'success');
-        } catch (err) {
-            showToast(err.message, 'error');
-        } finally {
-            searchBtn.disabled = false;
-            searchBtn.innerHTML = `
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-                Search Notes`;
-        }
-    };
-
-    searchBtn.addEventListener('click', () => handleSearch());
-    searchInput.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') handleSearch();
-    });
-
-    chips.forEach(chip => {
-        chip.addEventListener('click', () => {
-            const q = chip.getAttribute('data-query');
-            if (q) {
-                searchInput.value = q;
-                handleSearch(q);
-            }
-        });
-    });
-}
-
-function renderSemanticNotes(notesList) {
-    const container = document.getElementById('semantic-search-results');
-    if (!container) return;
-    container.innerHTML = '';
-
-    notesList.forEach(note => {
-        const card = document.createElement('div');
-        card.className = 'note-card';
-
-        const scorePercent = (note.similarity_score * 100).toFixed(1);
-
-        card.innerHTML = `
-            <div class="note-header">
-                <div class="note-title">Note #${note.id}: ${escapeHtml(note.title)}</div>
-                <div class="similarity-bar-wrapper">
-                    <div class="similarity-bar-bg">
-                        <div class="similarity-bar-fill" style="width: ${scorePercent}%"></div>
-                    </div>
-                    <span class="similarity-val">${scorePercent}%</span>
-                </div>
-            </div>
-            <p class="card-desc" style="margin-bottom:0;">${escapeHtml(note.content)}</p>
-        `;
-        container.appendChild(card);
-    });
-}
-
-// Utility: HTML escape
+// Utility: HTML escaping
 function escapeHtml(str) {
     if (!str) return '';
     return String(str)

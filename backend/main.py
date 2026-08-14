@@ -91,106 +91,6 @@ def get_students(db: Session = Depends(get_db)):
     return crud.get_students(db)
 
 
-@app.get("/students/{student_id}", response_model=StudentResponse)
-@app.get("/api/students/{student_id}", response_model=StudentResponse)
-def get_student_by_id(student_id: int, db: Session = Depends(get_db)):
-    """Retrieve a single student by ID."""
-    student = crud.get_student(db, student_id)
-    if not student:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Student not found.")
-    return student
-
-
-@app.put("/students/{student_id}", response_model=StudentResponse)
-@app.put("/api/students/{student_id}", response_model=StudentResponse)
-def update_student_age(
-    student_id: int, student_update: StudentUpdateAge, db: Session = Depends(get_db)
-):
-    """Update a student's age in the database."""
-    updated_student = crud.update_student_age(db, student_id, student_update.age)
-    if not updated_student:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Student not found.")
-    return updated_student
-
-
-@app.delete("/students/{student_id}", status_code=status.HTTP_200_OK)
-@app.delete("/api/students/{student_id}", status_code=status.HTTP_200_OK)
-def delete_student(student_id: int, db: Session = Depends(get_db)):
-    """Delete a student from the database."""
-    success = crud.delete_student(db, student_id)
-    if not success:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Student not found.")
-    return {"message": f"Student ID {student_id} successfully deleted."}
-
-
-# ----------------------------------------------------
-# PART 1 (B): Core Course CRUD Endpoints
-# ----------------------------------------------------
-
-@app.post("/courses", response_model=CourseResponse, status_code=status.HTTP_201_CREATED)
-@app.post("/api/courses", response_model=CourseResponse, status_code=status.HTTP_201_CREATED)
-def add_course(course: CourseCreate, db: Session = Depends(get_db)):
-    """Add a new course to the database."""
-    if course.student_id:
-        student = crud.get_student(db, course.student_id)
-        if not student:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Student ID {course.student_id} does not exist."
-            )
-    return crud.create_course(db, course)
-
-
-@app.get("/courses", response_model=List[CourseResponse])
-@app.get("/api/courses", response_model=List[CourseResponse])
-def get_courses(db: Session = Depends(get_db)):
-    """Retrieve all courses from the database."""
-    return crud.get_courses(db)
-
-
-@app.get("/courses/{course_id}", response_model=CourseResponse)
-@app.get("/api/courses/{course_id}", response_model=CourseResponse)
-def get_course_by_id(course_id: int, db: Session = Depends(get_db)):
-    """Retrieve a single course by ID."""
-    course = crud.get_course(db, course_id)
-    if not course:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Course not found.")
-    return course
-
-
-@app.put("/courses/{course_id}", response_model=CourseResponse)
-@app.put("/api/courses/{course_id}", response_model=CourseResponse)
-def update_course(
-    course_id: int, course_update: CourseUpdate, db: Session = Depends(get_db)
-):
-    """Update a course in the database."""
-    if course_update.student_id:
-        student = crud.get_student(db, course_update.student_id)
-        if not student:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Student ID {course_update.student_id} does not exist."
-            )
-    updated_course = crud.update_course(db, course_id, course_update)
-    if not updated_course:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Course not found.")
-    return updated_course
-
-
-@app.delete("/courses/{course_id}", status_code=status.HTTP_200_OK)
-@app.delete("/api/courses/{course_id}", status_code=status.HTTP_200_OK)
-def delete_course(course_id: int, db: Session = Depends(get_db)):
-    """Delete a course from the database."""
-    success = crud.delete_course(db, course_id)
-    if not success:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Course not found.")
-    return {"message": f"Course ID {course_id} successfully deleted."}
-
-
-# ----------------------------------------------------
-# PART 2: Algorithm Endpoints (Insertion Sort, Binary Search, Report)
-# ----------------------------------------------------
-
 @app.get("/students/sorted-by-age", response_model=List[StudentResponse])
 @app.get("/api/students/sorted-by-age", response_model=List[StudentResponse])
 def get_students_sorted_by_age(db: Session = Depends(get_db)):
@@ -222,6 +122,16 @@ def search_student_by_name(name: str = Query(..., min_length=1), db: Session = D
         )
 
     return matches
+
+
+@app.get("/students/{student_id}", response_model=StudentResponse)
+@app.get("/api/students/{student_id}", response_model=StudentResponse)
+def get_student_by_id(student_id: int, db: Session = Depends(get_db)):
+    """Retrieve a single student by ID."""
+    student = crud.get_student(db, student_id)
+    if not student:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Student not found.")
+    return student
 
 
 @app.get("/report")

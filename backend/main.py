@@ -40,7 +40,7 @@ app = FastAPI(
     version="2.0.0",
 )
 
-# Requirement 10: Explicit CORS for http://localhost:5500 (No allow_origins=["*"])
+# CORS Configuration for local development
 origins = [
     "http://localhost:5500",
     "http://127.0.0.1:5500",
@@ -59,7 +59,7 @@ app.add_middleware(
 
 @app.on_event("startup")
 def startup_event():
-    """Seed database on startup if empty."""
+    """Seed database on application startup if empty."""
     db = next(get_db())
     try:
         seed_database(db)
@@ -90,21 +90,18 @@ def add_student(student: StudentCreate, db: Session = Depends(get_db)):
 def get_students(min_age: Optional[int] = Query(None, description="Minimum age filter"), db: Session = Depends(get_db)):
     """
     Retrieve students from the database.
-    Requirement 8: If min_age is provided, return students whose age is >= min_age.
+    If min_age is provided, returns students whose age is >= min_age.
     """
     return crud.get_students(db, min_age=min_age)
 
 
 # ============================================================================
-# ALGORITHMS ENDPOINTS (Must be registered BEFORE /students/{student_id})
+# ALGORITHMS & REPORT ENDPOINTS
 # ============================================================================
 
 @app.get("/students/sorted", response_model=List[StudentResponse])
 def get_students_sorted(by: str = Query("age", description="Sort by field: 'age' or 'name'"), db: Session = Depends(get_db)):
-    """
-    Requirement 12: GET /students/sorted?by=age or by=name.
-    Sorts students using custom manual Insertion Sort.
-    """
+    """Sorts students using custom manual Insertion Sort algorithm."""
     students = crud.get_students(db)
     student_dicts = [s.to_dict() for s in students]
     sorted_dicts = insertion_sort_by_field(student_dicts, field=by)
@@ -113,15 +110,10 @@ def get_students_sorted(by: str = Query("age", description="Sort by field: 'age'
 
 @app.get("/students/search", response_model=List[StudentResponse])
 def search_student_by_name(name: str = Query(..., min_length=1), db: Session = Depends(get_db)):
-    """
-    Requirement 13: GET /students/search?name=
-    Searches for a student by Name using custom handwritten iterative Binary Search.
-    Sorts roster by Name first, then passes the name-sorted roster to binary_search_by_name.
-    """
+    """Searches for a student by Name using custom iterative Binary Search on a name-sorted roster."""
     students = crud.get_students(db)
     student_dicts = [s.to_dict() for s in students]
     
-    # Pre-sort roster by name as required for binary search input
     name_sorted_students = insertion_sort_by_field(student_dicts, field="name")
     matches = binary_search_by_name(name_sorted_students, name)
 
@@ -136,10 +128,7 @@ def search_student_by_name(name: str = Query(..., min_length=1), db: Session = D
 
 @app.get("/students/report")
 def get_report(min_age: int = Query(21, description="Minimum age threshold"), db: Session = Depends(get_db)):
-    """
-    Requirement 14: GET /students/report?min_age=21.
-    Returns report formatted as '[Age X] Name <email>' and count_meeting_min_age.
-    """
+    """Returns a formatted student report filtered by min_age and sorted by age."""
     students = crud.get_students(db)
     student_dicts = [s.to_dict() for s in students]
     report_lines, count_meeting = generate_student_report(student_dicts, min_age=min_age)
@@ -153,10 +142,7 @@ def get_report(min_age: int = Query(21, description="Minimum age threshold"), db
 
 @app.get("/students/{student_id}/course-count")
 def get_student_course_count(student_id: int, db: Session = Depends(get_db)):
-    """
-    Requirement 9: GET /students/{student_id}/course-count.
-    Uses database-level SQLAlchemy count() query.
-    """
+    """Returns the database-level course count for a student using SQLAlchemy count()."""
     student = crud.get_student(db, student_id)
     if not student:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Student not found.")
@@ -179,10 +165,7 @@ def get_student_by_id(student_id: int, db: Session = Depends(get_db)):
 
 @app.patch("/students/{student_id}", response_model=StudentResponse)
 def update_student(student_id: int, student_update: StudentUpdate, db: Session = Depends(get_db)):
-    """
-    Requirement 6 & 25: PATCH /students/{student_id}.
-    Updates student fields (e.g. age) via PATCH.
-    """
+    """Update student profile fields via PATCH."""
     updated_student = crud.update_student(db, student_id, student_update)
     if not updated_student:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Student not found.")
@@ -191,7 +174,7 @@ def update_student(student_id: int, student_update: StudentUpdate, db: Session =
 
 @app.delete("/students/{student_id}", status_code=status.HTTP_200_OK)
 def delete_student(student_id: int, db: Session = Depends(get_db)):
-    """Requirement 6: DELETE /students/{student_id}."""
+    """Delete a student profile by ID."""
     success = crud.delete_student(db, student_id)
     if not success:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Student not found.")
@@ -205,7 +188,7 @@ def delete_student(student_id: int, db: Session = Depends(get_db)):
 @app.post("/courses/", response_model=CourseResponse, status_code=status.HTTP_201_CREATED)
 @app.post("/courses", response_model=CourseResponse, status_code=status.HTTP_201_CREATED, include_in_schema=False)
 def add_course(course: CourseCreate, db: Session = Depends(get_db)):
-    """Requirement 7: POST /courses/."""
+    """Add a new course offering."""
     if course.student_id:
         student = crud.get_student(db, course.student_id)
         if not student:
@@ -219,13 +202,13 @@ def add_course(course: CourseCreate, db: Session = Depends(get_db)):
 @app.get("/courses/", response_model=List[CourseResponse])
 @app.get("/courses", response_model=List[CourseResponse], include_in_schema=False)
 def get_courses(db: Session = Depends(get_db)):
-    """Requirement 7: GET /courses/."""
+    """Retrieve all course offerings."""
     return crud.get_courses(db)
 
 
 @app.get("/courses/{course_id}", response_model=CourseResponse)
 def get_course_by_id(course_id: int, db: Session = Depends(get_db)):
-    """Requirement 7: GET /courses/{course_id}."""
+    """Retrieve a single course by ID."""
     course = crud.get_course(db, course_id)
     if not course:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Course not found.")
@@ -234,7 +217,7 @@ def get_course_by_id(course_id: int, db: Session = Depends(get_db)):
 
 @app.patch("/courses/{course_id}", response_model=CourseResponse)
 def update_course(course_id: int, course_update: CourseUpdate, db: Session = Depends(get_db)):
-    """Requirement 7: PATCH /courses/{course_id}."""
+    """Update course fields via PATCH."""
     if course_update.student_id:
         student = crud.get_student(db, course_update.student_id)
         if not student:
@@ -250,7 +233,7 @@ def update_course(course_id: int, course_update: CourseUpdate, db: Session = Dep
 
 @app.delete("/courses/{course_id}", status_code=status.HTTP_200_OK)
 def delete_course(course_id: int, db: Session = Depends(get_db)):
-    """Requirement 7: DELETE /courses/{course_id}."""
+    """Delete a course offering by ID."""
     success = crud.delete_course(db, course_id)
     if not success:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Course not found.")
@@ -258,31 +241,24 @@ def delete_course(course_id: int, db: Session = Depends(get_db)):
 
 
 # ============================================================================
-# AI SERVICE ENDPOINTS
+# AI ASSISTANT ENDPOINTS
 # ============================================================================
 
 @app.post("/assistant/summarize", response_model=SummarizerResponse)
 def summarize_endpoint(request: SummarizerRequest):
-    """
-    Requirement 16 & 20: POST /assistant/summarize.
-    Summarizes note text into topic, key_points, difficulty (lowercase).
-    """
+    """Summarizes note text into topic, key_points, and difficulty level."""
     return summarize_note(request.text if request else "")
 
 
 @app.get("/assistant/search", response_model=List[NoteResponse])
 def search_notes_endpoint(query: str = Query("", description="Search query string")):
-    """
-    Requirement 20: GET /assistant/search?query=.
-    Ranks 5 notes using mock_embed and cosine_similarity.
-    Returns 5 notes with score: 0.0 for empty/OOV query.
-    """
+    """Ranks computer science notes using vector term embeddings and Cosine Similarity."""
     return search_notes(query)
 
 
 @app.get("/assistant/notes", response_model=List[Dict[str, Any]])
 def get_notes_dataset():
-    """Returns exact 5 notes dataset."""
+    """Returns the computer science notes dataset."""
     return NOTES_DATASET
 
 

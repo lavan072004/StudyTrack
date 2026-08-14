@@ -1,7 +1,6 @@
 /**
  * StudyTrack Frontend Application Engine
  * Pure Vanilla JavaScript (No React / Frameworks)
- * Compliant with Assessment Event Delegation & DOM Creation Rules
  */
 
 const API_BASE = window.location.origin;
@@ -19,7 +18,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initStudentForm();
     initCourseForm();
     initControls();
-    initRosterEventDelegation(); // REQUIREMENT 22: Event delegation on #roster-list
+    initRosterEventDelegation();
     initAlgorithmsTab();
     initAIHelperPanel();
     
@@ -29,7 +28,7 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 /* ==========================================================================
-   Requirement 23: Visible Error Banner & Toast System
+   Error Banner & Toast Notification System
    ========================================================================== */
 function showError(message) {
     const banner = document.getElementById('error-banner');
@@ -247,12 +246,10 @@ function initStudentForm() {
 
             const newStudent = await response.json();
             
-            // REQUIREMENT 24: Do NOT reload page or rebuild entire roster.
-            // Use document.createElement() and append to #roster-list!
+            // Append new card directly using DOM element creation
             const rosterList = document.getElementById('roster-list');
             const newCard = createStudentCardElement(newStudent);
             
-            // If placeholder loading state exists, clear it
             if (rosterList.querySelector('.loading-state')) {
                 rosterList.innerHTML = '';
             }
@@ -274,7 +271,7 @@ function initStudentForm() {
 }
 
 /* ==========================================================================
-   REQUIREMENT 22: Event Delegation on #roster-list
+   Event Delegation on #roster-list
    ========================================================================== */
 function initRosterEventDelegation() {
     const rosterList = document.getElementById('roster-list');
@@ -300,7 +297,7 @@ function initRosterEventDelegation() {
 }
 
 /* ==========================================================================
-   REQUIREMENT 25: Edit Age via PATCH /students/{student_id}
+   Edit Age via PATCH /students/{student_id}
    ========================================================================== */
 async function handlePatchAge(studentId) {
     const ageInput = document.getElementById(`age-input-${studentId}`);
@@ -314,7 +311,7 @@ async function handlePatchAge(studentId) {
 
     try {
         const response = await fetch(`${API_BASE}/students/${studentId}`, {
-            method: 'PATCH', // REQUIREMENT 25: MUST use PATCH, NOT PUT
+            method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ age: newAge })
         });
@@ -327,7 +324,6 @@ async function handlePatchAge(studentId) {
         const updatedStudent = await response.json();
         showToast(`Age for ${updatedStudent.name} updated to ${updatedStudent.age}!`, 'success');
         
-        // Update local state item
         const idx = state.students.findIndex(s => s.id === studentId);
         if (idx !== -1) state.students[idx].age = updatedStudent.age;
         updateHeaderStats();
@@ -350,7 +346,6 @@ async function handleDeleteStudent(studentId) {
             throw new Error(errData.detail || 'Failed to delete student');
         }
 
-        // Remove card element from DOM without page reload
         const card = document.querySelector(`.student-card[data-id="${studentId}"]`);
         if (card) card.remove();
 
@@ -365,7 +360,7 @@ async function handleDeleteStudent(studentId) {
 }
 
 /* ==========================================================================
-   Part 1 (B): Course Management (CRUD)
+   Course Management (CRUD)
    ========================================================================== */
 async function fetchCourses() {
     const list = document.getElementById('courses-list');
@@ -619,7 +614,7 @@ function initAlgorithmsTab() {
 }
 
 /* ==========================================================================
-   REQUIREMENT 26: AI Helper Panel Engine
+   AI Helper Panel Engine
    ========================================================================== */
 function initAIHelperPanel() {
     // 1. Note Summarizer (POST /assistant/summarize)

@@ -34,9 +34,9 @@ def insertion_sort_by_field(students: List[Dict[str, Any]], field: str = "age") 
 
 def binary_search_by_name(sorted_students: List[Dict[str, Any]], target_name: str) -> List[Dict[str, Any]]:
     """
-    Searches for a student by Name using custom handwritten iterative Binary Search.
-    PREREQUISITE: Expects an ALREADY name-sorted list of students. Does NOT sort inside.
-    Uses EXACT formula: mid = low + (high - low) // 2
+    Searches for a student by Name using custom iterative Binary Search.
+    PREREQUISITE: Expects a name-sorted list of students.
+    Formula: mid = low + (high - low) // 2
     """
     if not sorted_students or not target_name:
         return []
@@ -47,20 +47,17 @@ def binary_search_by_name(sorted_students: List[Dict[str, Any]], target_name: st
     matches = []
 
     while low <= high:
-        # EXACT required mid formula
         mid = low + (high - low) // 2
         mid_name = str(sorted_students[mid].get("name", "")).strip().lower()
 
         if mid_name == target_clean:
             matches.append(sorted_students[mid])
 
-            # Expand left for duplicate names
             left = mid - 1
             while left >= 0 and str(sorted_students[left].get("name", "")).strip().lower() == target_clean:
                 matches.append(sorted_students[left])
                 left -= 1
 
-            # Expand right for duplicate names
             right = mid + 1
             while right < len(sorted_students) and str(sorted_students[right].get("name", "")).strip().lower() == target_clean:
                 matches.append(sorted_students[right])
@@ -76,10 +73,7 @@ def binary_search_by_name(sorted_students: List[Dict[str, Any]], target_name: st
 
 
 def count_students_meeting_min_age(students: List[Dict[str, Any]], min_age: int) -> int:
-    """
-    Counts students meeting minimum age requirement using explicit loop.
-    Requirement 14: Do NOT implement this only as sum(1 for ...).
-    """
+    """Counts students meeting minimum age requirement using an explicit loop."""
     count = 0
     for s in students:
         if s.get("age", 0) >= min_age:

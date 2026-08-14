@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>StudyTrack | Assessment Compliant Management System</title>
+    <title>StudyTrack | Student & Course Management System</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
@@ -22,7 +22,7 @@
                 </div>
                 <div class="brand-text">
                     <h2>StudyTrack</h2>
-                    <span class="version-badge">Assessment Ready</span>
+                    <span class="version-badge">v2.0 Pro</span>
                 </div>
             </div>
 
@@ -89,7 +89,7 @@
                 </div>
             </header>
 
-            <!-- REQUIREMENT 23: Visible Error Banner -->
+            <!-- Visible Error Banner -->
             <div id="error-banner" class="error-banner" style="display: none;"></div>
 
             <!-- Toast Notifications Container -->
@@ -114,7 +114,6 @@
                         <span class="form-hint">Email must contain '@' and Age must be greater than 0</span>
                     </div>
 
-                    <!-- REQUIREMENT 21: #student-form -->
                     <form id="student-form" class="student-form">
                         <div class="form-row">
                             <div class="input-group">
@@ -171,7 +170,6 @@
                     <span id="active-filter-badge" class="badge badge-info" style="display: none;">Filtered Roster</span>
                 </div>
 
-                <!-- REQUIREMENT 21: #roster-list (Container for event delegation) -->
                 <div id="roster-list" class="students-grid">
                     <div class="loading-state">
                         <div class="spinner"></div>
@@ -279,12 +277,12 @@
                             <h3>2. Binary Search</h3>
                             <span class="badge badge-green">O(log n) Complexity</span>
                         </div>
-                        <p class="card-desc">Handwritten iterative search using exact midpoint formula: <code>mid = low + (high - low) // 2</code> on a pre-sorted name list.</p>
+                        <p class="card-desc">Iterative search using midpoint formula: <code>mid = low + (high - low) // 2</code> on a pre-sorted name list.</p>
                     </div>
                 </div>
             </section>
 
-            <!-- REQUIREMENT 26: TAB 4: AI HELPER PANEL -->
+            <!-- TAB 4: AI HELPER PANEL -->
             <section id="tab-ai-helper" class="tab-page">
                 <div class="glass-card full-card">
                     <div class="card-header">
@@ -298,7 +296,7 @@
                             </div>
                             <h3>AI Helper & Study Notes Panel</h3>
                         </div>
-                        <span class="badge badge-info">12-Word Mock Vector & Cosine Similarity</span>
+                        <span class="badge badge-info">Vector Embeddings & Cosine Similarity</span>
                     </div>
 
                     <!-- Note Summarizer Section -->

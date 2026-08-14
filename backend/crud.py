@@ -21,7 +21,7 @@ def get_student_by_email(db: Session, email: str) -> Optional[Student]:
 def get_students(db: Session, min_age: Optional[int] = None, skip: int = 0, limit: int = 100) -> List[Student]:
     """
     Fetch students with optional min_age filter.
-    If min_age is provided, return students whose age is greater than or equal to min_age.
+    If min_age is provided, returns students whose age is >= min_age.
     """
     query = db.query(Student)
     if min_age is not None:
@@ -69,10 +69,7 @@ def delete_student(db: Session, student_id: int) -> bool:
 
 
 def get_student_course_count(db: Session, student_id: int) -> int:
-    """
-    Database-level count() query for a student's enrolled courses.
-    Requirement 9: Must use database-level count() query, NOT len(student.courses).
-    """
+    """Database-level count() query for a student's enrolled courses."""
     return db.query(Course).filter(Course.student_id == student_id).count()
 
 

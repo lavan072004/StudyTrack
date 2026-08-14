@@ -3,7 +3,6 @@ from typing import List, Optional, Dict, Any
 from fastapi import FastAPI, Depends, HTTPException, Query, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 
 from backend.database import Base, engine, get_db
@@ -25,7 +24,6 @@ from backend.algorithms import (
     insertion_sort_by_field,
     binary_search_by_name,
     generate_student_report,
-    count_students_meeting_min_age,
 )
 from backend.ai_service import (
     summarize_note,
@@ -74,8 +72,7 @@ def startup_event():
 # ============================================================================
 
 @app.post("/students/", response_model=StudentResponse, status_code=status.HTTP_201_CREATED)
-@app.post("/students", response_model=StudentResponse, status_code=status.HTTP_201_CREATED)
-@app.post("/api/students", response_model=StudentResponse, status_code=status.HTTP_201_CREATED)
+@app.post("/students", response_model=StudentResponse, status_code=status.HTTP_201_CREATED, include_in_schema=False)
 def add_student(student: StudentCreate, db: Session = Depends(get_db)):
     """Add a new student record to the database."""
     existing_student = crud.get_student_by_email(db, student.email)
@@ -89,8 +86,7 @@ def add_student(student: StudentCreate, db: Session = Depends(get_db)):
 
 
 @app.get("/students/", response_model=List[StudentResponse])
-@app.get("/students", response_model=List[StudentResponse])
-@app.get("/api/students", response_model=List[StudentResponse])
+@app.get("/students", response_model=List[StudentResponse], include_in_schema=False)
 def get_students(min_age: Optional[int] = Query(None, description="Minimum age filter"), db: Session = Depends(get_db)):
     """
     Retrieve students from the database.
@@ -104,7 +100,6 @@ def get_students(min_age: Optional[int] = Query(None, description="Minimum age f
 # ============================================================================
 
 @app.get("/students/sorted", response_model=List[StudentResponse])
-@app.get("/api/students/sorted", response_model=List[StudentResponse])
 def get_students_sorted(by: str = Query("age", description="Sort by field: 'age' or 'name'"), db: Session = Depends(get_db)):
     """
     Requirement 12: GET /students/sorted?by=age or by=name.
@@ -117,7 +112,6 @@ def get_students_sorted(by: str = Query("age", description="Sort by field: 'age'
 
 
 @app.get("/students/search", response_model=List[StudentResponse])
-@app.get("/api/students/search", response_model=List[StudentResponse])
 def search_student_by_name(name: str = Query(..., min_length=1), db: Session = Depends(get_db)):
     """
     Requirement 13: GET /students/search?name=
@@ -141,9 +135,6 @@ def search_student_by_name(name: str = Query(..., min_length=1), db: Session = D
 
 
 @app.get("/students/report")
-@app.get("/api/students/report")
-@app.get("/report")
-@app.get("/api/report")
 def get_report(min_age: int = Query(21, description="Minimum age threshold"), db: Session = Depends(get_db)):
     """
     Requirement 14: GET /students/report?min_age=21.
@@ -161,7 +152,6 @@ def get_report(min_age: int = Query(21, description="Minimum age threshold"), db
 
 
 @app.get("/students/{student_id}/course-count")
-@app.get("/api/students/{student_id}/course-count")
 def get_student_course_count(student_id: int, db: Session = Depends(get_db)):
     """
     Requirement 9: GET /students/{student_id}/course-count.
@@ -179,7 +169,6 @@ def get_student_course_count(student_id: int, db: Session = Depends(get_db)):
 
 
 @app.get("/students/{student_id}", response_model=StudentResponse)
-@app.get("/api/students/{student_id}", response_model=StudentResponse)
 def get_student_by_id(student_id: int, db: Session = Depends(get_db)):
     """Retrieve a single student by ID."""
     student = crud.get_student(db, student_id)
@@ -189,7 +178,6 @@ def get_student_by_id(student_id: int, db: Session = Depends(get_db)):
 
 
 @app.patch("/students/{student_id}", response_model=StudentResponse)
-@app.patch("/api/students/{student_id}", response_model=StudentResponse)
 def update_student(student_id: int, student_update: StudentUpdate, db: Session = Depends(get_db)):
     """
     Requirement 6 & 25: PATCH /students/{student_id}.
@@ -202,7 +190,6 @@ def update_student(student_id: int, student_update: StudentUpdate, db: Session =
 
 
 @app.delete("/students/{student_id}", status_code=status.HTTP_200_OK)
-@app.delete("/api/students/{student_id}", status_code=status.HTTP_200_OK)
 def delete_student(student_id: int, db: Session = Depends(get_db)):
     """Requirement 6: DELETE /students/{student_id}."""
     success = crud.delete_student(db, student_id)
@@ -216,8 +203,7 @@ def delete_student(student_id: int, db: Session = Depends(get_db)):
 # ============================================================================
 
 @app.post("/courses/", response_model=CourseResponse, status_code=status.HTTP_201_CREATED)
-@app.post("/courses", response_model=CourseResponse, status_code=status.HTTP_201_CREATED)
-@app.post("/api/courses", response_model=CourseResponse, status_code=status.HTTP_201_CREATED)
+@app.post("/courses", response_model=CourseResponse, status_code=status.HTTP_201_CREATED, include_in_schema=False)
 def add_course(course: CourseCreate, db: Session = Depends(get_db)):
     """Requirement 7: POST /courses/."""
     if course.student_id:
@@ -231,15 +217,13 @@ def add_course(course: CourseCreate, db: Session = Depends(get_db)):
 
 
 @app.get("/courses/", response_model=List[CourseResponse])
-@app.get("/courses", response_model=List[CourseResponse])
-@app.get("/api/courses", response_model=List[CourseResponse])
+@app.get("/courses", response_model=List[CourseResponse], include_in_schema=False)
 def get_courses(db: Session = Depends(get_db)):
     """Requirement 7: GET /courses/."""
     return crud.get_courses(db)
 
 
 @app.get("/courses/{course_id}", response_model=CourseResponse)
-@app.get("/api/courses/{course_id}", response_model=CourseResponse)
 def get_course_by_id(course_id: int, db: Session = Depends(get_db)):
     """Requirement 7: GET /courses/{course_id}."""
     course = crud.get_course(db, course_id)
@@ -249,7 +233,6 @@ def get_course_by_id(course_id: int, db: Session = Depends(get_db)):
 
 
 @app.patch("/courses/{course_id}", response_model=CourseResponse)
-@app.patch("/api/courses/{course_id}", response_model=CourseResponse)
 def update_course(course_id: int, course_update: CourseUpdate, db: Session = Depends(get_db)):
     """Requirement 7: PATCH /courses/{course_id}."""
     if course_update.student_id:
@@ -266,7 +249,6 @@ def update_course(course_id: int, course_update: CourseUpdate, db: Session = Dep
 
 
 @app.delete("/courses/{course_id}", status_code=status.HTTP_200_OK)
-@app.delete("/api/courses/{course_id}", status_code=status.HTTP_200_OK)
 def delete_course(course_id: int, db: Session = Depends(get_db)):
     """Requirement 7: DELETE /courses/{course_id}."""
     success = crud.delete_course(db, course_id)
@@ -280,8 +262,6 @@ def delete_course(course_id: int, db: Session = Depends(get_db)):
 # ============================================================================
 
 @app.post("/assistant/summarize", response_model=SummarizerResponse)
-@app.post("/api/assistant/summarize", response_model=SummarizerResponse)
-@app.post("/ai/summarize", response_model=SummarizerResponse)
 def summarize_endpoint(request: SummarizerRequest):
     """
     Requirement 16 & 20: POST /assistant/summarize.
@@ -291,8 +271,6 @@ def summarize_endpoint(request: SummarizerRequest):
 
 
 @app.get("/assistant/search", response_model=List[NoteResponse])
-@app.get("/api/assistant/search", response_model=List[NoteResponse])
-@app.get("/ai/semantic-search", response_model=List[NoteResponse])
 def search_notes_endpoint(query: str = Query("", description="Search query string")):
     """
     Requirement 20: GET /assistant/search?query=.

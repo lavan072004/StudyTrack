@@ -78,7 +78,7 @@ def add_student(student: StudentCreate, db: Session = Depends(get_db)):
     existing_student = crud.get_student_by_email(db, student.email)
     if existing_student:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
+            status_code=status.HTTP_409_CONFLICT,
             detail="A student with this email already exists."
         )
 
@@ -193,7 +193,7 @@ def add_course(course: CourseCreate, db: Session = Depends(get_db)):
         student = crud.get_student(db, course.student_id)
         if not student:
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
+                status_code=status.HTTP_409_CONFLICT,
                 detail=f"Student ID {course.student_id} does not exist."
             )
     return crud.create_course(db, course)

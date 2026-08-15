@@ -95,6 +95,11 @@ Navigate to `http://127.0.0.1:8000` in your web browser (or serve `frontend/` vi
   }
   ```
   *(Note: Empty input returns topic: `"untitled"`, key_points: `[]`, difficulty: `"easy"`)*.
+  
+  **Topic rule:** The topic is derived deterministically from the most frequent non-trivial word in the input text. If no such word exists, the topic defaults to "Study Note".
+
+**Difficulty rule:** Difficulty is based on total word count: fewer than 20 words = "easy", 20–59 words = "medium", and 60 or more words = "hard".
+
 * `GET /assistant/search?query=fastapi` - Generates 12-element mock vectors, calculates Cosine Similarity, and ranks 5 notes. *(Empty/OOV query returns all 5 notes with `score: 0.0`)*.
 
 ---

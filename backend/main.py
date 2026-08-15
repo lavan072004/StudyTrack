@@ -222,7 +222,7 @@ def update_course(course_id: int, course_update: CourseUpdate, db: Session = Dep
         student = crud.get_student(db, course_update.student_id)
         if not student:
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
+                status_code=status.HTTP_409_CONFLICT,
                 detail=f"Student ID {course_update.student_id} does not exist."
             )
     updated_course = crud.update_course(db, course_id, course_update)

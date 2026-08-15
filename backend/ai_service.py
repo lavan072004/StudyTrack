@@ -125,10 +125,9 @@ def summarize_note(text: Optional[str]) -> Dict[str, Any]:
             freq[w] = freq.get(w, 0) + 1
 
     sorted_words = sorted(freq.items(), key=lambda item: item[1], reverse=True)
-    top_keywords = [w[0].title() for w in sorted_words[:3]]
-    topic = " ".join(top_keywords) if top_keywords else "Study Note"
+    topic = sorted_words[0][0].title() if sorted_words else "Study Note"
 
-    key_points = sentences[:4] if sentences else [clean_text]
+    key_points = sentences[:3] if sentences else [clean_text]
 
     total_words = len(words)
     if total_words < 20:
